@@ -1,0 +1,3 @@
+SEMINAR ARBEIT.
+
+Thema Wearables

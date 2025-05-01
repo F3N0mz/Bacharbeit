@@ -1,0 +1,42 @@
+\section{Konstruktion und 3D-Druck des Entwurfs}
+The final design differs significantly from the prototypes. It has seen many iterative improvements and thus deserves its' own chapter to cover all the changes to each component of the design. The final design consists of the following bodies:
+\begin{enumerate}
+	\item{\textbf{Stand}} Is the stand upon which the device resides. Needed for introduction an another axis of rotation and decoupling dispense and disposal mechanisms
+	\item{\textbf{UpperBody}} Consists of a walls and a floor of a dispense mechanism with a cutout for dispene and disposal paths as well as connection mechanisms.
+	\item{\textbf{UpperMill}} Is a mechanisms that divides the whole dispense system into 21 functional + 1 service chamber (22 in total). Inner side contains a gear and teeth for connecting upper mill with the lower mill (synchronicity between them is still retained)
+	\item{\textbf{LowerMill}} Is a mechanisms that divides the whole disposal system into 22 chambers. Unlike dispense system, they are all the same, since chambers need to be of the same size as dispense system, but there is no need for the service chamber. it also contains grooves to reduce the surface contact with lower body and thus friction
+	\item{\textbf{LowerBody}} is a very complex detail. Firstly, it contains cutouts for the stepper motor, driver and the deck that holds further electronics. Secondly, it has "ears" that define the axis of rotation for the dispense pathway. Thirdly, it contains grooves for the lower mill to travel on rotationally, to optimize power spent on overcoming friction.
+	\item{\textbf{LowerDeck}} Is a cover for all the electronics inside. It contains grooves on the sides for it to slide into electronics chamber.
+	\item{\textbf{Electronics}} is the housing for microcontrooler, battery and charger. it also contains cutout for the deck to slide into so that electronics is covered from the outside.
+	\item{\textbf{Holder}} is a mechanism of additional mechanical fixation of the electronics. Although the Electronics compartment was designed so, that all the components are fixed in place, it might come to the situations where excess movement (e.g. during transportation) might cause electronics to fall out. this mechanism prevents it.
+	\item{\textbf{UpperDeck}} Is an upper cover of the device.
+\end{enumerate}
+
+Moving forward, we will go step-by-step into the design of each of those components and also will cover the nuances of 3D-printing them all. For now, however, we will compare the final design with the goals set and why this design was chosen in the end. The goals can be divided into 2 types: Initial requirements and the problems arisen during previous designs. Initial requirements are:
+\begin{enumerate}
+	\item{\textbf{Das Gerät enthält 21 Kammern, 3 für jeden Tag der Woche}} This requirement is satisfied. The final design has 22 chambers, 21 of which can contain pills.
+	\item{\textbf{Das Gerät enthält ein Pillenrücknahmesystem}} This requirement is also satisfied. 
+	\item{\textbf{Das Gerät verfügt über eine begleitende App zur Fernsteuerung.}} This is not implemented yet. Alternatively, this requirement tells us, that an user interface on the body of device itself is not required. The electronics of this device are chosen so that this requirement can be implemented later on.
+\end{enumerate}
+The problems that arisen during the design are solved:
+\begin{enumerate}
+	\item{From first prototype:}
+	\begin{enumerate}
+		\item{\textbf{Zu viele bewegliche Teile}} Final design only has 2 mills that are moving simultaneosly on the same axis and nothing else. This is significant improvement over the first design
+		\item{\textbf{Erfordert eine große Spenderschale}} the disposal system of the final design is located directly underneath the dispensing system and they have the same spatial dimensions.
+		\item{\textbf{Enthält mehrere kleine Objekte}} The only small object is the holder, all the other ones are big and static, which reduces the amount of potential failure points.
+	\end{enumerate}
+	\item{From first prototype:}
+	\begin{enumerate}
+		\item{\textbf{Chambers of the upper mechanism are smaller}} Since the dispense and disposal mechanisms are of the same size, this is not the problem
+		\item{\textbf{Synchronous movement of both chambers}} While both mechanisms still move synchronically, the pathways of dispense and disposal were decoupled, therefore their synchronous movement is not a problem anymore.
+		\item{\textbf{Reliance on a ramp for pills to fall down.}} The final design doesn't have a ramp. the pills would fall directly down in the disposal pathway. In dispense pathway, the device would be tilted 45 degrees which makes certain that the pills would fall down.
+	\end{enumerate}
+	\item{From third prototype:}
+	\begin{enumerate}
+		\item{\textbf{Too tall}} The device will never be completely vertical. Although the device is now at an elevation it is still shorter as when having to have one wheel aways be vertical.
+		\item{\textbf{Requires more Rotational momentum}} since both mills are now horizontal, there is no extra power spent to battle gravity. the mills will only normally rotate in horizontal position.
+	\end{enumerate}
+\end{enumerate}
+\subsection{Components of the final design}
+\

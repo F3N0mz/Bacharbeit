@@ -1,0 +1,59 @@
+\section{Einleitung}
+\subsection{Problemstellung und Motivation}
+Das Hauptziel dieses Projekts ist es, die Möglichkeiten zur Entwicklung eines solchen Geräts zu erforschen, das mit konventionellen Werkzeugen (3D-Druck) in dezentralisierten Massenproduktion hergestellt werden kann und gleichzeitig aufgrund der niedrigen Herstellungskosten weithin verfügbar ist. Die Frage dabei ist, ob ein solches Gerät überhaupt existieren kann. Zwar gibt es bereits fertige Lösungen auf dem Markt, doch sind diese nicht billig und einige von ihnen weisen deutliche Merkmale des in diesem Projekt zu entwickelnden Prototyps auf, sei es das Fehlen von Fernbedienungen, das Fehlen einer flexiblen Zeitplanung oder das Fehlen eines Pillenrücknahmesystems.
+\subsection{Ziele und Vorgehensweise}
+   Ziel dieses Projekts ist die Entwicklung eines solchen Geräts, das Menschen mit motorischen oder geistigen Behinderungen den Zugang zu ihren Medikamenten erleichtert. Erreicht werden soll dies durch Automatisierung, Einfachheit der Benutzung und Ergonomie. Im Rahmen dieses Projekts wird ein funktionierender Prototyp dieses Geräts entwickelt. Hier sind die ersten Anforderungen für dieses Projekt:
+   \begin{enumerate}
+   	
+   	\item Das Gerät soll 21 Kammern enthalten, 3 für jeden Tag der Woche. Dies wäre die Standardeinstellung, aber die Zeitplanung könnte auch so konfiguriert werden, dass die Pillen entweder zweimal oder einmal am Tag ausgegeben werden können. In diesem Fall entspricht das 21-Kammer-System nicht genau der 1-Wochen-Abgabezeit. Die Abgabeinformationen sind für das Pflegepersonal verfügbar.
+   	\item Das Gerät sollte ein Pillenrücknahmesystem enthalten. Zweck dieses Systems ist es, die nicht rechtzeitig verbrauchten Pillen aus Sicherheitsgründen aufzubewahren, einen versehentlichen Überkonsum von nicht rechtzeitig verbrauchten Pillen zu vermeiden und die Überwachung der nicht verbrauchten Pillen zu ermöglichen. Daher ist auch dieses System in 21 Funktionskammern unterteilt.
+   	\item Das Gerät wird über eine Begleit-App verfügen. Dabei handelt es sich um eine Android-basierte Anwendung, mit der der Betreuer das Gerät konfigurieren, überwachen und einstellen kann.
+\end{enumerate}
+ Da es sich bei diesem Projekt um die Entwicklung eines Prototyps handelt, sind Aktivitäten wie Marketing, Zertifizierung und industrielle Massenproduktion nicht Teil des Projekts.
+Auch Benutzertests sind nicht Teil dieses Projekts, da sie die Herstellung mehrerer Geräte, die Sammlung von Testpersonen (d. h. die Herstellung von Kontakten zu Krankenhäusern, Altenheimen usw.) und die statistische Analyse dieser Daten erfordern.
+
+All dies sind zwar offensichtlich notwendige nächste Schritte nach der Entwicklung des Prototyps, aber für dieses Projekt fallen sie aus dem Rahmen.
+\newpage
+\subsection{Struktur und Gliederung der Arbeit}
+Diese Arbeit ist in mehrere große Schritte unterteilt:
+\begin{enumerate}
+	\item{\textbf{Design und Entwicklung des Gehäuses}}
+	
+	Dies ist die erste Aufgabe: die Entwicklung der Grundstruktur. Am Ende dieses Schritts soll ein komplettes Gerät in Form gebracht werden. Wir werden uns die verschiedenen Optionen für die Entwicklung der Struktur ansehen, ihre Vor- und Nachteile erörtern und die am besten geeignete für den nächsten Schritt auswählen.
+	\item{\textbf{Konstruktion und 3D-Druck des Entwurfs}}
+	
+	Dies ist der Schritt, bei dem unser Entwurf eine physische Form annimmt. Dies ist der Schritt der Prototypenerstellung, bei dem wir das Gerät iterativ entwickeln, um sicherzustellen, dass der Entwurf funktioniert. Dies ist auch der Schritt, bei dem die Material- und mechanischen Eigenschaften unseres Geräts unsere größte Sorge sind. Am Ende dieses Schritts ist das Gerät funktionsfähig, aber noch nicht konfigurierbar. Das bedeutet, dass es in der Lage sein wird, jeweils eine Kammer zu rotieren.
+	\item{\textbf{Entwicklung der Android-APP}}
+	
+	Dieser Schritt ist ähnlich wie die Schritte 1 und 2, allerdings für eine Android-APP. Wir entwerfen und entwickeln die Vorlage für die App, die dann mit Funktionen gefüllt werden kann. In diesem Schritt werden wir auch festlegen, welche Funktionen der Mikrocontroller auf unserem Gerät an die App ausgeben muss.
+	Am Ende dieses Schritts hätten wir ein funktionsfähiges Gerät und eine App, die jedoch noch nicht miteinander verbunden sind, was uns zum nächsten Schritt bringt.
+	\item{\textbf{\textbf{Entwicklung der Schnittstelle zwischen dem Gerät und der App}}}
+	Dies ist der letzte Schritt, bei dem alles zusammenkommt. Das Gerät wird mit der Android-APP kommunizieren. Es wird in der Lage sein, Informationen zu senden (Nutzungsstatistiken, aktuelle Uhrzeit, Zeit bis zur nächsten Abgabe usw.) und zu empfangen (Konfigurationseinstellungen, Zwangsabgabebefehl usw.).
+\end{enumerate}
+Die Tabelle enthält detailliertere und präzisere Schritte, die während dieses Projekts unternommen werden müssen. Bitte beachten Sie, dass sie erweitert wurde und daher mehr Schritte umfasst. Das bedeutet, dass mehrere Schritte aus der untenstehenden Tabelle zu einem Schritt aus der obigen Liste zusammengefasst werden. Genauer gesagt gehören die Schritte 1.0 und 2.0 zum Bereich \textbf{Design und Entwicklung des Gehäuses}, und die Schritte 3.0 und 4.0 zum Bereich \textbf{Konstruktion und 3D-Druck des Entwurfs}.
+\newpage
+\begin{table}[h!]
+	\centering
+	\small
+	\begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{4cm}|}
+		\hline
+		\textbf{Arbeitspaket} & \textbf{Eingabe} & \textbf{Aktivität} & \textbf{Ziel} \\
+		\hline
+		1.0 Initialisierung & Festlegung der genauen Anforderungen an das Projekt, Bestimmung der Zielgruppe, Durchführung des bürokratischen Prozesses, Festlegung des Projektumfangs. & Kommunikation mit Stakeholdern & Klar formuliertes Ziel, strukturierter Entwicklungsplan. \\
+		\hline
+		2.0 Physikalische Anforderungen & Anforderungen an die physikalischen Eigenschaften des Geräts: Materialien, Mechanismen, Größe, Anforderungen an die Robustheit, Ergonomie. & Analyse der Zielgruppe und Kommunikation mit Stakeholdern. & Festlegung der Grenzen der vorgeschlagenen Designs. \\
+		\hline
+		3.0 3D-Druck und Konstruktion eines funktionierenden Prototyps & Anforderungen an die verwendeten Materialien, 3D-Modelle des Prototyps. & Anpassung der Modelle für den 3D-Druck, Drucken der Prototypen. & Physisch existierendes Gerät mit allen funktionierenden Funktionen. \\
+		\hline
+		4.0 Implementierung des Liefersystems & Die Einschränkungen aus dem vorherigen Schritt, Ideen zur Implementierung, Machbarkeit verschiedener Ansätze. & Festlegen und Finalisieren eines 3D-Modells des Liefersystems, 3D-Konstruktion, ggf. 3D-Druck eines Prototyps. & Funktionierender Liefermechanismus. \\
+		\hline
+		5.0 Implementierung des Steuersystems & Anforderungen an Ergonomie und Funktionalität. & Auswahl des Mikrocontrollers, Verbindung des Mikrocontrollers mit dem Liefersystem, Erstellung von Skelettfunktionen für die erforderlichen Funktionen des Geräts. & Liefersystem und Steuersystem sind miteinander verbunden und können programmiert werden, sodass das Liefersystem steuerbar ist. \\
+		\hline
+		6.0 Programmierung der Remote-App & Anforderungen an die Funktionalität der Remote-App. & Programmierung der App (in einer höheren Programmiersprache). & Anwendung, die das Gerät über ein drahtloses Netzwerk steuern kann. \\
+		\hline
+		7.0 Programmierung des Steuersystems & Skelettfunktionen, die in den vorherigen Schritten implementiert wurden. & Programmierung des Mikrocontrollers. & Das Gerät funktioniert ordnungsgemäß. \\
+		\hline
+	\end{tabular}
+	\caption{Projektplanungstabelle}
+	\label{tab:projektplanung}
+\end{table}

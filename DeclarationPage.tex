@@ -1,0 +1,37 @@
+% --- Content for declaration.tex ---
+
+\clearpage % Ensure this starts on a new page
+\thispagestyle{plain} % Use plain page style (just page number at bottom) if needed, often default
+
+\vspace*{4cm} % Add some space from the top, adjust as needed
+
+% Use \section* for an unnumbered section heading in the document's style
+% Or use manual formatting for closer match to image:
+{\centering % Center the heading
+	\fontfamily{lmss}\fontsize{18pt}{22pt}\selectfont % Sans-serif, larger font
+	\bfseries % Bold
+	Eidesstattliche Erklärung\par
+}
+
+\vspace{3em} % Space after heading
+
+% The declaration text
+\noindent % Prevent paragraph indentation
+Ich erkläre eidesstattlich, dass ich die vorliegende Arbeit selbstständig und ohne fremde Hilfe verfasst, andere als die angegebenen Quellen nicht benutzt und die den benutzten Quellen entnommenen Stellen als solche gekennzeichnet habe. Die Arbeit wurde bisher in gleicher oder ähnlicher Form keiner anderen Prüfungsbehörde vorgelegt.
+
+\vspace{6em} % Space before signature section
+
+\noindent % Prevent indentation for the signature line
+\begin{minipage}[t]{0.45\textwidth} % Minipage for Place/Date (left)
+	\vspace{0pt} % Align baseline with the rule in the other minipage
+	Linz, am \today
+\end{minipage}%
+\hfill % Push the minipages apart
+\begin{minipage}[t]{0.45\textwidth} % Minipage for Signature (right)
+	\raggedleft % Align content to the right within this minipage
+	\rule{6cm}{0.4pt} \\ % Signature line (adjust width as needed)
+	\vspace{0.5em} % Small space between line and name
+	Roman Iumatov
+\end{minipage}
+
+% --- End of declaration.tex ---

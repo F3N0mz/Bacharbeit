@@ -1,0 +1,82 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc} % Input encoding
+\usepackage[T1]{fontenc}    % Font encoding
+\usepackage{lmodern}        % Font family
+\usepackage{geometry}       % Page layout
+\geometry{a4paper, margin=1in}
+\usepackage{comment}
+\usepackage{xcolor}
+\usepackage{graphicx}       % For including images
+\usepackage{hyperref}
+\usepackage[german]{babel}       % For hyperlinks
+\usepackage{amsmath}
+\usepackage{siunitx}
+\usepackage{csquotes}
+
+\usepackage[backend=biber,style=ieee]{biblatex}	% for literature references, no compiler specified for now
+\addbibresource{Literature.bib}
+
+%\title{Wearable Chemical Sensors: Problems and Prospects}  % Removed title command
+%\author{Roman Iumatov, Ilya Pschenichniy, Katharina Sinnabell} % Removed author command
+%\date{\today} % Removed date command
+
+\begin{document}
+	
+	\begin{titlepage}
+		\centering
+		
+		\vspace*{4cm} % Adjust vertical space from top
+		
+		{\fontfamily{lmss}\fontsize{24pt}{30pt}\selectfont Entwicklung eines automatisierten Pillenspenders\par} % Title - Larger font, sans-serif
+		
+		\vspace{1cm}
+		
+		{\fontfamily{lmss}\fontsize{16pt}{20pt}\selectfont Bachelor-Arbeit\par} % Subtitle - Smaller font, sans-serif
+		
+		\vspace{2cm}
+		
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont zur Erlangung des akademischen Grades\par} % Degree info 1 - Regular font
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Bachelor of\par} % Degree info 2 - Regular font
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Science in Engineering\par} % Degree info 3 - Regular font
+		
+		\vspace{2cm}
+		
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Eingereicht am\par} % Submission info 1 - Regular font
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Bachelorstudiengang Medizintechnik, Linz\par} % Submission info 2 - Regular font
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Fachhochschule Oberösterreich\par} % Submission info 3 - Regular font
+		
+		\vspace{2cm}
+		
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont von\par} % Author prefix - Regular font
+		{\fontfamily{lmr}\fontsize{14pt}{18pt}\selectfont Roman Iumatov\par} % Author Name - Slightly larger font, Regular font
+		
+		\vspace{2cm}
+		
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Linz, am \today \par} % Date - Regular font
+		
+		\vfill % Push Begutachter to the bottom
+		
+		\vspace{1cm} % Add some space before Begutachter
+		
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont Begutachter:\par} % Reviewer title - Regular font
+		{\fontfamily{lmr}\fontsize{12pt}{16pt}\selectfont FH-Prof. Dipl.-Ing. Dr. Robert Merwa\par} % Reviewer name - Regular font
+		
+		
+	\end{titlepage}
+	\newpage
+	\input{DeclarationPage}
+	\newpage
+	\input{Kurzfassung}
+	\newpage
+	\input{ExecSum}
+	\newpage
+	\input{TOC}
+	\newpage
+	\input{Einleitung}
+	\newpage
+	\input{Design und Entwicklung des Gehäuses}
+	\newpage
+	\input{Konstruktion3Ddruck}
+\end{document}
