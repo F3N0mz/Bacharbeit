@@ -79,8 +79,9 @@ These parameters were chosen to match the size of the cog and amount of teeth ne
 
 The lower side contains 4 teetch to connect the upper mill to the lower mill. This implementation makes sure that the two mills will move at the same time, removing need for a separate stepper motor for each of them or a connection directly to the upper mill.
 
-There are certain design decisions that have been taken to reduce friction. Firstly, on the upper side the ring is offset by 0.4 mm so that the upper deck will not touch the whole mechanism, but only this ring. At the bottom side, the teeth are complex shaped. the upper part of the tooth has a length of 2.4 mm, which is 0.4 mm taller than the thickness of the floor of the upper body. The idea behind it is that the wings of the mill will not touch the floor directly, leaving 0.2 mm opening between the floor and the upper mill. 
-the measurements of the upper mill are:
+There are certain design decisions that have been taken to reduce friction. Firstly, on the upper side the ring is offset by 0.4 mm so that the upper deck will not touch the whole mechanism, but only this ring. At the bottom side, the teeth are complex shaped. the upper part of the tooth has a length of 2.4 mm, which is 0.4 mm taller than the thickness of the floor of the upper body. The idea behind it is that the wings of the mill will not touch the floor directly, leaving 0.2 mm opening between the floor and the upper mill.
+ 
+The measurements of the upper mill are:
 \begin{itemize}
 	\item chamber height = 17 mm
 	\item[] chamber length = 45.05 mm
@@ -89,8 +90,29 @@ the measurements of the upper mill are:
 	\item gear tooth depth 2.7 mm
 	\item connecting tooth length = 2.4 mm + 5 mm
 \end{itemize}
-\subsubsection{LowerBody}
+\newpage
 \subsubsection{LowerMill}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Lowermill}
+	\caption[Lower Mill]{Lower mill. 1 view from above. 2 view from below}
+	\label{fig:lowermill}
+\end{figure}
+Lower mill consists of 22 chambers which are the same. This is done to make sure that the sizes of upper and lower mill chambers are the same. Just as with the upper mill, inner ring is also a zahnrad, designed the same way and with the same parameters as upper mill. Unlike the upper mill, lower mill doesn't have teeth to connect. The teeth of upper mill are inserted into teeth of zahnrad of the lower mill.
+
+The upper part also contains a ring that is 2 mm above the rest of the construction. This ring exists to eliminate the friction between the ceiling (which is a floor of the upper mill) and the chambers. 
+
+The lower part is also made in such a way as to reduce friction. it contains rims that would travel rotationally along the ring located on the lower body. they are rather tall, measured at 1 mm to make sure that they don't accidentally fall out during movement.
+
+The measurements of lower mill are:
+\begin{itemize}
+	\item chamber height = 13.6 mm
+	\item[] chamber length = 45.05 mm
+	\item inner ring diameter = 100 mm
+	\item outer ring diameter = 193 mm
+	\item gear tooth depth 2.7 mm
+\end{itemize}
+\subsubsection{LowerBody}
 \subsubsection{Electronics}
 \subsubsection{LowerDeck}
 \subsubsection{Stand}
