@@ -140,8 +140,11 @@ The measurements of lower body are:
 	\item thickness of wall = 2.5 mm 
 	\item notch depth = 0.4 mm
 \end{itemize}
-
+\newpage
 \subsubsection{Electronics}
-\subsubsection{LowerDeck}
+The device needs a microcontroller and a stepper motor for control. There are many options from which to choose, therefore we need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diamter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
+
+For the microcontroller, an ESP32 S3 DevKitC-1 N16R8 ESP32 S3 WROOM1 N16R8 was selected \cite{microcontroller}. it is a common choice to pair this microcontroller and stepper motor and it has the network interface (both Wi-Fi and Bluetooth). For us a Bluetooth-Low-Energy is of particular interest. It allows us to save battery, since we don't need a constant stream of data exchange between a smartphone and device.
+\subsubsection{Lower Deck}
 \subsubsection{Stand}
 \subsection{3D printing specifics}
