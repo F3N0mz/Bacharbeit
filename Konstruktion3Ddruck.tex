@@ -38,5 +38,60 @@ The problems that arisen during the design are solved:
 		\item{\textbf{Requires more Rotational momentum}} since both mills are now horizontal, there is no extra power spent to battle gravity. the mills will only normally rotate in horizontal position.
 	\end{enumerate}
 \end{enumerate}
+\newpage
 \subsection{Components of the final design}
-\
+\subsubsection{UpperBody}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_6}
+	\caption[Upper Body]{Upper Body}
+	\label{fig:screenshot6}
+\end{figure}
+Upper body is a simple design consisting of a cylindrical shape with multiple cutouts. First one is on the floor, through this hole the pills that have not been taken would fall. The other cutout is in the wall, through this cutout the pills that will have to be taken would fall. In the middle there is a circular hole for housing the mill. 
+
+The measurements are:
+\begin{itemize}
+	\item outer radius = 100mm
+	\item inner radius = 52 mm
+	\item height = 20 mm
+	\item thickness of floor = 2 mm
+	\item thickness of wall = 2.5 mm 
+\end{itemize}
+\newpage
+\subsubsection{UpperMill}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.6\linewidth]{Figures/Uppermill}
+	\caption[Upper Mill]{Upper Mill. 1 View from above. 2 view from below}
+	\label{fig:uppermill}
+\end{figure}
+Upper mill consists of 21 functional chambers and one service chamber. the service chamber is needed to cover the hole in the upper body, so that at any time, 21 chambers are available. Inner rim is designed as a  zahnrad. It has 88 teeth, it will be important later for the stepper motor movement calculation. The gear was designed using a free tool called DXF and SVG GEAR DXF GENERATOR \cite{evolvent_spur_gear_generator}.
+These parameters were chosen to match the size of the cog and amount of teeth needed: 
+\begin{itemize}
+	\item Gear 1 Tooth Count: $-88$ (internal gear)
+	\item Gear 2 Tooth Count: $22$
+	\item Module: $1.11$ (mm)
+	\item Pressure Angle: $20^\circ$
+	\item Clearance: $0.15$ mm
+	\item Gear 1 Center Hole Diameter: $0$ mm (no hole)
+	\item Gear 2 Center Hole Diameter: $0$ mm (no hole)
+\end{itemize}
+
+The lower side contains 4 teetch to connect the upper mill to the lower mill. This implementation makes sure that the two mills will move at the same time, removing need for a separate stepper motor for each of them or a connection directly to the upper mill.
+
+There are certain design decisions that have been taken to reduce friction. Firstly, on the upper side the ring is offset by 0.4 mm so that the upper deck will not touch the whole mechanism, but only this ring. At the bottom side, the teeth are complex shaped. the upper part of the tooth has a length of 2.4 mm, which is 0.4 mm taller than the thickness of the floor of the upper body. The idea behind it is that the wings of the mill will not touch the floor directly, leaving 0.2 mm opening between the floor and the upper mill. 
+the measurements of the upper mill are:
+\begin{itemize}
+	\item chamber height = 17 mm
+	\item[] chamber length = 45.05 mm
+	\item inner ring diameter = 100 mm
+	\item outer ring diameter = 193 mm
+	\item gear tooth depth 2.7 mm
+	\item connecting tooth length = 2.4 mm + 5 mm
+\end{itemize}
+\subsubsection{LowerBody}
+\subsubsection{LowerMill}
+\subsubsection{Electronics}
+\subsubsection{LowerDeck}
+\subsubsection{Stand}
+\subsection{3D printing specifics}
