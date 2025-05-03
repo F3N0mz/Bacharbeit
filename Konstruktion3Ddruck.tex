@@ -1,22 +1,22 @@
-\section{Konstruktion und 3D-Druck des Entwurfs}
+\section{Construction and 3D-Print of Design}
 The final design differs significantly from the prototypes. It has seen many iterative improvements and thus deserves its' own chapter to cover all the changes to each component of the design. The final design consists of the following bodies:
 \begin{enumerate}
 	\item{\textbf{Stand}} Is the stand upon which the device resides. Needed for introduction an another axis of rotation and decoupling dispense and disposal mechanisms
-	\item{\textbf{UpperBody}} Consists of a walls and a floor of a dispense mechanism with a cutout for dispene and disposal paths as well as connection mechanisms.
+	\item{\textbf{UpperBody}} Consists of a walls and a floor of a dispense mechanism with a cutout for dispense and disposal paths as well as connection mechanisms.
 	\item{\textbf{UpperMill}} Is a mechanisms that divides the whole dispense system into 21 functional + 1 service chamber (22 in total). Inner side contains a gear and teeth for connecting upper mill with the lower mill (synchronicity between them is still retained)
 	\item{\textbf{LowerMill}} Is a mechanisms that divides the whole disposal system into 22 chambers. Unlike dispense system, they are all the same, since chambers need to be of the same size as dispense system, but there is no need for the service chamber. it also contains grooves to reduce the surface contact with lower body and thus friction
 	\item{\textbf{LowerBody}} is a very complex detail. Firstly, it contains cutouts for the stepper motor, driver and the deck that holds further electronics. Secondly, it has "ears" that define the axis of rotation for the dispense pathway. Thirdly, it contains grooves for the lower mill to travel on rotationally, to optimize power spent on overcoming friction.
 	\item{\textbf{LowerDeck}} Is a cover for all the electronics inside. It contains grooves on the sides for it to slide into electronics chamber.
-	\item{\textbf{Electronics}} is the housing for microcontrooler, battery and charger. it also contains cutout for the deck to slide into so that electronics is covered from the outside.
+	\item{\textbf{Electronics}} is the housing for microcontroller, battery and charger. it also contains cutout for the deck to slide into so that electronics is covered from the outside.
 	\item{\textbf{Holder}} is a mechanism of additional mechanical fixation of the electronics. Although the Electronics compartment was designed so, that all the components are fixed in place, it might come to the situations where excess movement (e.g. during transportation) might cause electronics to fall out. this mechanism prevents it.
 	\item{\textbf{UpperDeck}} Is an upper cover of the device.
 \end{enumerate}
 
 Moving forward, we will go step-by-step into the design of each of those components and also will cover the nuances of 3D-printing them all. For now, however, we will compare the final design with the goals set and why this design was chosen in the end. The goals can be divided into 2 types: Initial requirements and the problems arisen during previous designs. Initial requirements are:
 \begin{enumerate}
-	\item{\textbf{Das Gerät enthält 21 Kammern, 3 für jeden Tag der Woche}} This requirement is satisfied. The final design has 22 chambers, 21 of which can contain pills.
-	\item{\textbf{Das Gerät enthält ein Pillenrücknahmesystem}} This requirement is also satisfied. 
-	\item{\textbf{Das Gerät verfügt über eine begleitende App zur Fernsteuerung.}} This is not implemented yet. Alternatively, this requirement tells us, that an user interface on the body of device itself is not required. The electronics of this device are chosen so that this requirement can be implemented later on.
+	\item{\textbf{The device contains 21 chambers, 3 for each day of the week.}} This requirement is satisfied. The final design has 22 chambers, 21 of which can contain pills.
+	\item{\textbf{The device contains a pill disposal system.}} This requirement is also satisfied. 
+	\item{\textbf{The device has an accompanying app for remote control.}} This is not implemented yet. Alternatively, this requirement tells us, that an user interface on the body of device itself is not required. The electronics of this device are chosen so that this requirement can be implemented later on.
 \end{enumerate}
 The problems that arisen during the design are solved:
 \begin{enumerate}
@@ -66,7 +66,7 @@ The measurements are:
 	\caption[Upper Mill]{Upper Mill. 1 View from above. 2 view from below}
 	\label{fig:uppermill}
 \end{figure}
-Upper mill consists of 21 functional chambers and one service chamber. the service chamber is needed to cover the hole in the upper body, so that at any time, 21 chambers are available. Inner rim is designed as a  zahnrad. It has 88 teeth, it will be important later for the stepper motor movement calculation. The gear was designed using a free tool called DXF and SVG GEAR DXF GENERATOR \cite{evolvent_spur_gear_generator}.
+Upper mill consists of 21 functional chambers and one service chamber. the service chamber is needed to cover the hole in the upper body, so that at any time, 21 chambers are available. Inner rim is designed as a  cogwheel. It has 88 teeth, it will be important later for the stepper motor movement calculation. The gear was designed using a free tool called DXF and SVG GEAR DXF GENERATOR \cite{evolvent_spur_gear_generator}.
 These parameters were chosen to match the size of the cog and amount of teeth needed: 
 \begin{itemize}
 	\item Gear 1 Tooth Count: $-88$ (internal gear)
@@ -78,7 +78,7 @@ These parameters were chosen to match the size of the cog and amount of teeth ne
 	\item Gear 2 Center Hole Diameter: $0$ mm (no hole)
 \end{itemize}
 
-The lower side contains 4 teetch to connect the upper mill to the lower mill. This implementation makes sure that the two mills will move at the same time, removing need for a separate stepper motor for each of them or a connection directly to the upper mill.
+The lower side contains 4 teeth to connect the upper mill to the lower mill. This implementation makes sure that the two mills will move at the same time, removing need for a separate stepper motor for each of them or a connection directly to the upper mill.
 
 There are certain design decisions that have been taken to reduce friction. Firstly, on the upper side the ring is offset by 0.4 mm so that the upper deck will not touch the whole mechanism, but only this ring. At the bottom side, the teeth are complex shaped. the upper part of the tooth has a length of 2.4 mm, which is 0.4 mm taller than the thickness of the floor of the upper body. The idea behind it is that the wings of the mill will not touch the floor directly, leaving 0.2 mm opening between the floor and the upper mill.
  
@@ -99,7 +99,7 @@ The measurements of the upper mill are:
 	\caption[Lower Mill]{Lower mill. 1 view from above. 2 view from below}
 	\label{fig:lowermill}
 \end{figure}
-Lower mill consists of 22 chambers which are the same. This is done to make sure that the sizes of upper and lower mill chambers are the same. Just as with the upper mill, inner ring is also a zahnrad, designed the same way and with the same parameters as upper mill. Unlike the upper mill, lower mill doesn't have teeth to connect. The teeth of upper mill are inserted into teeth of zahnrad of the lower mill.
+Lower mill consists of 22 chambers which are the same. This is done to make sure that the sizes of upper and lower mill chambers are the same. Just as with the upper mill, inner ring is also a cogwheel, designed the same way and with the same parameters as upper mill. Unlike the upper mill, lower mill doesn't have teeth to connect. The teeth of upper mill are inserted into teeth of cogwheel of the lower mill.
 
 The upper part also contains a ring that is 2 mm above the rest of the construction. This ring exists to eliminate the friction between the ceiling (which is a floor of the upper mill) and the chambers. 
 
@@ -141,10 +141,11 @@ The measurements of lower body are:
 	\item notch depth = 0.4 mm
 \end{itemize}
 \newpage
-\subsubsection{Electronics}
-The device needs a microcontroller and a stepper motor for control. There are many options from which to choose, therefore we need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diamter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
+\subsubsection{Lower Deck and Electronics compartment}
+The device needs a microcontroller and a stepper motor for control. There are many options from which to choose, therefore we need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diameter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
 
 For the microcontroller, an ESP32 S3 DevKitC-1 N16R8 ESP32 S3 WROOM1 N16R8 was selected \cite{microcontroller}. it is a common choice to pair this microcontroller and stepper motor and it has the network interface (both Wi-Fi and Bluetooth). For us a Bluetooth-Low-Energy is of particular interest. It allows us to save battery, since we don't need a constant stream of data exchange between a smartphone and device.
-\subsubsection{Lower Deck}
+
+Another addition to the electronics is inclusion of battery. While not a requirement, battery-powered device is much more convenient to use as it makes it independent from being located near a socket. For this, Panasonic NCR18650B \cite{panasonic_ncr18650b} Battery was selected. 
 \subsubsection{Stand}
 \subsection{3D printing specifics}
