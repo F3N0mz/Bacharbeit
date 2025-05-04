@@ -22,9 +22,9 @@ The problems that arisen during the design are solved:
 \begin{enumerate}
 	\item{From first prototype:}
 	\begin{enumerate}
-		\item{\textbf{Zu viele bewegliche Teile}} Final design only has 2 mills that are moving simultaneosly on the same axis and nothing else. This is significant improvement over the first design
-		\item{\textbf{Erfordert eine große Spenderschale}} the disposal system of the final design is located directly underneath the dispensing system and they have the same spatial dimensions.
-		\item{\textbf{Enthält mehrere kleine Objekte}} The only small object is the holder, all the other ones are big and static, which reduces the amount of potential failure points.
+		\item{\textbf{Too many moving parts}} Final design only has 2 mills that are moving simultaneosly on the same axis and nothing else. This is significant improvement over the first design
+		\item{\textbf{Requires a large dispenser bowl}} the disposal system of the final design is located directly underneath the dispensing system and they have the same spatial dimensions.
+		\item{\textbf{Contains several small objects}} The only small object is the holder, all the other ones are big and static, which reduces the amount of potential failure points.
 	\end{enumerate}
 	\item{From first prototype:}
 	\begin{enumerate}
@@ -127,7 +127,7 @@ On the inner side there is a ring around which the lower mill rotates. This ring
 
 On the outer side, there are "ears" upon which the whole device would be positioned on a stand. These ears define the axis of rotation for the dispense pathway. Outer rim contains a ridge to fix the the upper body and prevent accidental rotation.
 
-On the inner side there is also grooves to append lower deck, these grooves are needed to remove the possibility of attaching the lower deck the wrong way.
+On the inner side there is also grooves to append lower deck, these grooves are needed to remove the possibility of attaching the lower deck the wrong way. Grooves are 125 mm long, 2 mm wide and 2 mm deep.
 
 The measurements of lower body are:
 \begin{itemize}
@@ -141,11 +141,55 @@ The measurements of lower body are:
 	\item notch depth = 0.4 mm
 \end{itemize}
 \newpage
-\subsubsection{Lower Deck and Electronics compartment}
+\subsubsection{Electronics}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.5\linewidth]{Figures/Motor}
+	\caption[Connection schema of electronic components]{Connection schema of electronic components. Components from top to bottom: 1)28BYJ Stepper motor 2) Left: Charger Module 3)Right: ULN2003 Motor Driver 4)Left:Panasonic NCR18650B Battery 5)Right ESP32 S3 DevKitC-1 N16R8 S3 Microcontroller}
+	\label{fig:motor}
+\end{figure}
 The device needs a microcontroller and a stepper motor for control. There are many options from which to choose, therefore we need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diameter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
 
-For the microcontroller, an ESP32 S3 DevKitC-1 N16R8 ESP32 S3 WROOM1 N16R8 was selected \cite{microcontroller}. it is a common choice to pair this microcontroller and stepper motor and it has the network interface (both Wi-Fi and Bluetooth). For us a Bluetooth-Low-Energy is of particular interest. It allows us to save battery, since we don't need a constant stream of data exchange between a smartphone and device.
+For the microcontroller, an ESP32 S3 DevKitC-1 N16R8 ESP32 S3 was selected \cite{microcontroller}. it is a common choice to pair this microcontroller and stepper motor and it has the network interface (both Wi-Fi and Bluetooth). For us a Bluetooth-Low-Energy is of particular interest. It allows us to save battery, since we don't need a constant stream of data exchange between a smartphone and device.
 
 Another addition to the electronics is inclusion of battery. While not a requirement, battery-powered device is much more convenient to use as it makes it independent from being located near a socket. For this, Panasonic NCR18650B \cite{panasonic_ncr18650b} Battery was selected. 
+\newpage
+\subsubsection{Lower Deck(Electronics compartment)}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_13}
+	\caption[Lower Deck]{Lower Deck and its' features: 1)Ridge 2)Microcontroller housing 3)Charger Module housing 4)Battery Wall}
+	\label{fig:screenshot13}
+\end{figure}
+The lower deck houses three electronic components: Microcontroller, battery charger and battery. It also serves as a cover for the stepper motor, whereas the driver would be located on the opposite side of the lower body, inside the ring. The shape of the lower deck is quite more complex than that of the previous bodies, therefore it makes sense to divide the description of it into multiple parts. on the image \ref{fig:screenshot13} you can see the lower deck and a numbers that point to the parts of components. Here is a description of all the components of this body:
+\begin{enumerate}
+	\item{\textbf{Ridge}} Lower body has 2 parallel grooves on its lower part. These grooves will house these ridges on the lower deck. The ridges are designed to actually be a tiny bit smaller (1.6 mm vs 2 mm) than the notches of the lower body, we will discuss why in the later chapter. Ridges are 125mm long, 1.6 mm thick and 2 mm deep. 
+	\item{\textbf{ISP32 Microcontroller housing}} This is where the microcontroller would be placed. We know the dimensions of the microcontroller (63.5 mm x 28 mm) and this opening is made to be around the same size to fit it (67.6 mm x 28 mm). It has cutouts on the body for 2 USB ports present on a microcontroller, as well as a LED.
+	\item{\textbf{Charger Module housing}} In this part the charger circuit will be nested. The cutout matches exactly the dimensions of the charging module (28 mm x 17.5 mm). This compartment contains also the cutout on the body for the USB port.
+	\item{\textbf{Battery Wall}} Battery holder is attached to this wall. at the sides one can notice that the connection to the side walls does not go all the way. The reason is that wires will go from the battery holder through these openings. 
+\end{enumerate}
+Lower deck also features a long hole for a slide-in lid which you can see to the sides from the Ridges that connect Deck to the lower body.
+\newpage
 \subsubsection{Stand}
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_14}
+	\caption[Stand]{Stand}
+	\label{fig:screenshot14}
+\end{figure}
+Stand is a simple design that features 2 distinct components: Pillars to the sides to hold the device and a dispensing dock in the front and center of it. The pillars have a cutout to slide down the device into it and notches to prevent the device from tilting backwards. The dispensing dock is designed to match the shape of the device so that it can easily be tilted into it at a 45 degree angle.
+The dimensions are:
+\begin{itemize}
+	\item Stand height from bottom to the peak of stand: 190 mm
+	\item Stand Width: 240 mm
+	\item Stand Length: 200 mm
+	\item Stand floor thickness: 15 mm
+	\item Pillar thickness: 20 mm
+\end{itemize}
+
+It should be noted, however, that although this Stand is the default solution for the sake of completeness of the project, ideally, it would be manufactured not with a plastic, but rather with metal. The purpose of the stand (besides providing pathway for dispense of the pills) is also to provide stability of the construction so that people suffering from tremors would be able to lean firmly onto it and stabilize their hand. In this case, plastic might not be the optimal solution.
+\newpage
 \subsection{3D printing specifics}
+As mentioned earlier, one of the goals of the project is to make the device buildable with consumer-grade devices, among them 3D-Printers. This requirement introduces first physical limitations for the device, as 3D-Printers have a limited printing space. For this project as a reference printer, a Prusa MK4S 3D-Printer \cite{PrusaMK4Specs} was selected. From the Specification we can see that the build volume is 250 x 210 x 220 mm, putting a limitation on how large our device can be. Theoretically, of course, we could circumvent this limitation by designing the components in such a way that they would consist of multiple parts interlocking with themselves, however this adds unnecessary complexity to an already extensive project. The dimensions of each component mentioned in previous section conform to this limitation.
+
+As for material selection, Prusa MK4S (and many other printers) support printing with PLA plastic. This material has many advantages: it is biodegradable (it is a polymer of lactic acid), lightweight, sterile, doesn't produce as much fumes as standard ABS plastic and is easy to print with. However, certain disadvantages should be mentioned: Heat deflection at around 55-60 degrees means it cannot be washed with boiling water as it would warp the body. Pure PLA is food safe, however the pigments might not be, so any wear might introduce microparticles that might not be as safe to consume if colored PLA is chosen.

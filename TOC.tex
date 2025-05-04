@@ -1,3 +1,11 @@
-\listoffigures
-\newpage
 \tableofcontents
+\listoffigures
+
+\cleardoublepage            % new page, still roman numbers
+\section*{List of Abbreviations}
+\addcontentsline{toc}{section}{List of Abbreviations}
+
+\begin{acronym}[PLA]        % widest acronym in brackets
+	\acro{BLE}{Bluetooth Low Energy}
+	\acro{PLA}{Polylactic Acid}
+\end{acronym}

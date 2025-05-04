@@ -90,7 +90,7 @@ As mentioned earlier, this design is already what we would like to see as a fina
 A few thoughts come to mind as a potential approach to the redesign. Using gravity is obviously good, we need to continue doing, however we might change how we use it. Having 2 systems one above another is also a great idea, what if we can make the chambers the same size? We could reposition the holes. Regarding synchronous movement, we have 2 types of direction of pill movement: From dispense to patient (intended behavior) and from dispense to disposal (backup behavior). The intended behavior implies human interaction, we can make some simple movement to deliver pills that would remove the need for synchronicity from our system. All these ideas are implemented in the final design, however it is worth mentioning that there has also been the intermediary step, where the dispense mechanism was rotated 90 degrees (see image \ref{fig:screenshot4}), so that it is completely vertical. It is worth giving a short overview of why this idea wasn't chosen as final:
 \begin{itemize}
 	\item{\textbf{Too tall}} the wheel with diameter of 100mm would be vertically positioned which takes a lot of space.
-	\item{\textbf{Requires more Rotational momentum}} A motor would have to directly resist the force of gravity to lift the pills up a mill
+	\item{\textbf{Requires more torque}} A motor would have to directly resist the force of gravity to lift the pills up a mill
 	\item{\textbf{Doesn't fix synchronicity}} The mechanisms are still locked together, this issue remains unresolved.
 \end{itemize}
 \begin{figure}[]
