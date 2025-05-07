@@ -18,19 +18,19 @@ Stepper myStepper(stepsPerRevolution, in1Pin, in2Pin, in3Pin, in4Pin);
 
 // BLE Service and Characteristic UUIDs
 // You can generate your own unique UUIDs using a tool like https://www.uuidgenerator.net/
-#define SERVICE_UUID           "4fafc201-1fb5-459e-8fcc-c5c9c331914b" // Main service UUID
+#define SERVICE_UUID           "03339647-3f4e-43df-abff-fac54287cf1a" // Main service UUID
 
 // Writable Characteristics
-#define CHAR_SET_DEVICE_TIME_UUID         "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define CHAR_SET_DISPENSE_SCHEDULE_UUID   "c8c5b01a-3158-4259-8797-77159a0a7f7e"
-#define CHAR_TRIGGER_MANUAL_DISPENSE_UUID "d1d0a9f0-42f0-4965-ae54-968c78f8279a"
+#define CHAR_SET_DEVICE_TIME_UUID         "65232f1d-618a-4268-9050-0548142a4536"
+#define CHAR_SET_DISPENSE_SCHEDULE_UUID   "999c584e-06c0-49a1-995a-66b7c802ac1b"
+#define CHAR_TRIGGER_MANUAL_DISPENSE_UUID "36bb95f2-e57e-4db9-b9aa-fb6541ee784e"
 
 // Readable Characteristics
-#define CHAR_GET_DEVICE_TIME_UUID             "a0d1e33c-8f86-4f3b-9075-8ea28f783b5e"
-#define CHAR_GET_DISPENSE_SCHEDULE_UUID       "b3e9a2f8-1c90-4d9a-9381-8245cd789b9c"
-#define CHAR_GET_LAST_DISPENSE_INFO_UUID    "e7f3b5d0-2e76-4a8c-9a0f-9f8e7d6c5b4a"
-#define CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID "f0a9d8c4-3b12-4e6d-8c5b-1a09f8e7d6c5"
-#define CHAR_GET_DISPENSE_LOG_UUID            "0c8b7a6e-4d5f-499a-8b3c-2e1d0f9a8b7c"
+#define CHAR_GET_DEVICE_TIME_UUID             "272ee276-e37e-4d78-8c5e-bb7225d35074"
+#define CHAR_GET_DISPENSE_SCHEDULE_UUID       "b53c2ed4-ae26-476d-8414-011a025dddfc"
+#define CHAR_GET_LAST_DISPENSE_INFO_UUID    "40d3b5d8-5480-4b7b-a115-5fe86bf17d7d"
+#define CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID "4b14acc4-768a-43e1-9d6c-0d97307e2666"
+#define CHAR_GET_DISPENSE_LOG_UUID            "6f182da7-c5a8-40ab-a637-f97ed6b5777b"
 // You might also want a characteristic for battery level if it's battery powered
 // #define CHAR_BATTERY_LEVEL_UUID "..."
 
@@ -71,7 +71,7 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
             // TODO: Implement time setting logic
             // For now, just acknowledge by updating the readable characteristic if it exists
             if (pGetDeviceTimeCharacteristic) {
-                pGetDeviceTimeCharacteristic->setValue("Time Set ACK: " + String(value.c_str()));
+                pGetDeviceTimeCharacteristic->setValue(std::string("Time Set ACK: ") + value);
                 pGetDeviceTimeCharacteristic->notify(); // If notifications are enabled
             }
         } else if (uuid == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
