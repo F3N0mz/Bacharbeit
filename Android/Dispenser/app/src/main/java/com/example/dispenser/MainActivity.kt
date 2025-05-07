@@ -4,14 +4,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import com.example.dispenser.ui.theme.DispenserTheme
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -35,12 +31,25 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.getValue // Import this
-import androidx.compose.runtime.setValue // Import this
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+// Import collectAsState to observe StateFlows
+import androidx.compose.runtime.collectAsState
+// Import viewModel from lifecycle-viewmodel-compose
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+
+// Import the screen composables from their new files
+// Assuming the screens are directly under com.example.dispenser.screens
+import com.example.dispenser.screens.DevConnScreen
+import com.example.dispenser.screens.devconnection.DevConnViewModel // Update path if needed
+// Import the data classes/enums used by the screen
+import com.example.dispenser.screens.ConnectionStatus
+import com.example.dispenser.screens.UiBluetoothDevice
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,9 +57,23 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             DispenserTheme {
-                // You might want to initialize ViewModels or dependencies here
-                // and pass them down, or use dependency injection (e.g., Hilt)
-                AppScaffoldWithDrawer()
+                // The ViewModel should ideally be tied to the Activity or NavHost
+                // For this simple example, instantiating it here works,
+                // but consider scope in larger apps.
+                // Using viewModel() ensures it survives configuration changes.
+                val devConnViewModel: DevConnViewModel = viewModel()
+
+                AppScaffoldWithDrawer(
+                    // Pass the ViewModel instance to the main layout,
+                    // or you could instantiate it inside AppScaffoldWithDrawer
+                    // depending on preferred architecture. Passing it here is cleaner
+                    // if AppScaffoldWithDrawer itself doesn't need to know about
+                    // the ViewModel's details, but just needs to pass it down.
+                    // Let's instantiate it inside AppScaffoldWithDrawer for now,
+                    // as it's tied to the screen selection logic within that composable.
+                    // This means the ViewModel is scope to the AppScaffoldWithDrawer's
+                    // lifecycle within the setContent block.
+                )
             }
         }
     }
@@ -61,10 +84,16 @@ class MainActivity : ComponentActivity() {
 fun AppScaffoldWithDrawer(modifier: Modifier = Modifier) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    // Use state destructuring for easier access (optional but common)
-    var selectedItem by remember { mutableStateOf("Device Connection") } // Set initial screen
+    var selectedItem by remember { mutableStateOf("Device Connection") }
 
     val drawerItems = listOf("Device Connection", "Device Configuration", "Monitoring & Status")
+
+    // Instantiate ViewModels here. This ViewModel's lifecycle will be tied
+    // to the lifecycle of the AppScaffoldWithDrawer composable instance within setContent.
+    // Using viewModel() helper from lifecycle-viewmodel-compose
+    val devConnViewModel: DevConnViewModel = viewModel()
+    // TODO: Instantiate other ViewModels for other screens here similarly
+
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -76,9 +105,8 @@ fun AppScaffoldWithDrawer(modifier: Modifier = Modifier) {
                         label = { Text(item) },
                         selected = item == selectedItem,
                         onClick = {
-                            selectedItem = item // Update the selected item state
-                            scope.launch { drawerState.close() } // Close the drawer
-                            // No explicit navigation needed here, just state change
+                            selectedItem = item
+                            scope.launch { drawerState.close() }
                         },
                         modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
                     )
@@ -91,7 +119,7 @@ fun AppScaffoldWithDrawer(modifier: Modifier = Modifier) {
             modifier = Modifier.fillMaxSize(),
             topBar = {
                 TopAppBar(
-                    title = { Text("Pillenspender") },
+                    title = { Text(selectedItem) },
                     navigationIcon = {
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
                             Icon(
@@ -103,68 +131,62 @@ fun AppScaffoldWithDrawer(modifier: Modifier = Modifier) {
                 )
             }
         ) { innerPadding ->
-            // --- THIS IS WHERE THE CONTENT SWITCHING HAPPENS ---
-            // Based on selectedItem, display the corresponding screen composable
             Column(modifier = Modifier
-                .padding(innerPadding) // Apply the scaffold's padding
-                .fillMaxSize() // Allow the content to fill the remaining space
+                .padding(innerPadding)
+                .fillMaxSize()
             ) {
                 when (selectedItem) {
-                    "Device Connection" -> DeviceConnectionScreen()
+                    "Device Connection" -> {
+                        // --- Collect state from ViewModel ---
+                        val scanStatus by devConnViewModel.scanStatus.collectAsState()
+                        val foundDevices by devConnViewModel.foundDevices.collectAsState()
+                        val connectionStatus by devConnViewModel.connectionStatus.collectAsState()
+                        val connectingDevice by devConnViewModel.connectingDevice.collectAsState()
+                        val lastError by devConnViewModel.lastError.collectAsState()
+
+                        // --- Pass state and ViewModel functions to the screen composable ---
+                        DevConnScreen(
+                            scanStatus = scanStatus,
+                            foundDevices = foundDevices,
+                            connectionStatus = connectionStatus,
+                            connectingDevice = connectingDevice,
+                            lastError = lastError,
+                            onStartScanClick = { devConnViewModel.startScan() },
+                            onStopScanClick = { devConnViewModel.stopScan() },
+                            // Use the method reference ::connectToDevice to pass the function
+                            onDeviceClick = devConnViewModel::connectToDevice,
+                            onDisconnectClick = { devConnViewModel.disconnect() }
+                        )
+                    }
                     "Device Configuration" -> DeviceConfigurationScreen()
                     "Monitoring & Status" -> MonitoringStatusScreen()
-                    // Add other cases if you have more drawer items
-                    else -> Text("Error: Unknown Screen") // Fallback
+                    else -> Text("Error: Unknown Screen Selected")
                 }
             }
-            // --- END OF CONTENT SWITCHING ---
         }
     }
 }
 
-// Placeholder Composable for Device Connection Screen
-@Composable
-fun DeviceConnectionScreen() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Device Connection Screen")
-        // TODO: Implement Bluetooth scanning, listing, pairing UI here
-        // This screen will need permissions checks, Bluetooth adapter interaction,
-        // scanning logic, displaying found devices, initiating connections.
-        // This is the most complex part involving Android's Bluetooth APIs.
-    }
-}
-
-// Placeholder Composable for Device Configuration Screen
+// Placeholder functions for other screens (keep them until they get their own files and ViewModels)
 @Composable
 fun DeviceConfigurationScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Device Configuration Screen")
-        // TODO: Implement UI for adding/editing/viewing schedules, setting device time.
-        // This screen will need forms (time pickers), lists (LazyColumn for schedules),
-        // buttons. It will interact with the Bluetooth communication layer to send/receive config.
-        // You'll also need local data storage for schedules (e.g., Room database or SharedPreferences).
+        Text("Device Configuration Screen (Placeholder)")
     }
 }
 
-// Placeholder Composable for Monitoring & Status Screen
 @Composable
 fun MonitoringStatusScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Monitoring & Status Screen")
-        // TODO: Implement UI for displaying device status (battery, last dispense, etc.),
-        // and a list (LazyColumn) for dispense history.
-        // This screen will also interact with the Bluetooth communication layer to receive status updates and history logs.
-        // You'll need local storage for the dispense history log.
+        Text("Monitoring & Status Screen (Placeholder)")
     }
 }
 
-// Original Greeting Composable - might not be needed anymore in the main content area
+// Original Greeting Composable (optional)
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = "Hello $name!",
-        )
+        Text(text = "Hello $name!")
     }
 }
 
@@ -172,20 +194,16 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
 @Composable
 fun AppScaffoldWithDrawerPreview() {
     DispenserTheme {
+        // For previewing, you might need to mock the ViewModel dependency
+        // This preview will likely not fully function without providing a mock ViewModel
+        // A better preview might be to create a dedicated AppScaffoldWithDrawerPreview
+        // that provides dummy ViewModel states/functions.
+        // Or, preview the individual screens with sample data as done in DevConnScreen.kt
         AppScaffoldWithDrawer()
     }
 }
 
-// Preview for DeviceConnectionScreen
-@Preview(showBackground = true)
-@Composable
-fun DeviceConnectionScreenPreview() {
-    DispenserTheme {
-        DeviceConnectionScreen()
-    }
-}
-
-// Preview for DeviceConfigurationScreen
+// Keep or move previews for other screens
 @Preview(showBackground = true)
 @Composable
 fun DeviceConfigurationScreenPreview() {
@@ -194,7 +212,6 @@ fun DeviceConfigurationScreenPreview() {
     }
 }
 
-// Preview for MonitoringStatusScreen
 @Preview(showBackground = true)
 @Composable
 fun MonitoringStatusScreenPreview() {
