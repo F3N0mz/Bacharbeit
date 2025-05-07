@@ -16,6 +16,37 @@ const int in3Pin = 6; // In3
 const int in4Pin = 7; // In4
 Stepper myStepper(stepsPerRevolution, in1Pin, in2Pin, in3Pin, in4Pin);
 
+bool isStepping = false;
+int stepsRemaining = 0;
+unsigned long lastStepTime = 0;
+const unsigned long stepInterval = 2; // Milliseconds between steps (adjust for speed)
+                                    // 2048 steps / (desired_RPM / 60) / 1000 = stepInterval_ms
+                                    // e.g., 10 RPM: 2048 / (10/60) / 1000 = 2048 / 0.166 / 1000 = 12288 / 1000 = ~12ms (too slow)
+                                    // The Stepper library's setSpeed(RPM) translates to a delay.
+                                    // For setSpeed(10), delay is 60*1000/stepsPerRevolution/10 = 60000/2048/10 = ~2.9ms.
+                                    // Let's aim for something similar, e.g., 3ms.
+
+void deenergizeStepper() {
+    digitalWrite(in1Pin, LOW);
+    digitalWrite(in2Pin, LOW);
+    digitalWrite(in3Pin, LOW);
+    digitalWrite(in4Pin, LOW);
+    Serial.println("Stepper coils de-energized.");
+}
+
+void startDispense(int numSteps) {
+    if (!isStepping) { // Prevent starting a new move if one is in progress
+        Serial.print("Starting dispense of ");
+        Serial.print(numSteps);
+        Serial.println(" steps.");
+        stepsRemaining = numSteps;
+        isStepping = true;
+        // No need to energize here, first step will do it.
+        // myStepper.setSpeed(10); // Ensure speed is set if it could change
+    }
+}
+
+
 // BLE Service and Characteristic UUIDs
 // You can generate your own unique UUIDs using a tool like https://www.uuidgenerator.net/
 #define SERVICE_UUID           "03339647-3f4e-43df-abff-fac54287cf1a" // Main service UUID
@@ -78,14 +109,15 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
             Serial.println("Set_Dispense_Schedule received. Value: " + String(value.c_str()));
             // TODO: Implement schedule setting logic
         } else if (uuid == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
-            Serial.println("Trigger_Manual_Dispense received. Value: " + String(value.c_str()));
-            // TODO: Implement manual dispense logic (e.g., call myStepper.step(OneChamber))
-            // For now, simulate and update last dispense info
-            if(pGetLastDispenseInfoCharacteristic) {
-                pGetLastDispenseInfoCharacteristic->setValue("Manual dispense triggered now");
-                pGetLastDispenseInfoCharacteristic->notify();
-            }
-        }
+              Serial.println("Trigger_Manual_Dispense received. Value: " + String(value.c_str()));
+              if (!isStepping) { // Only start if not already stepping
+                  startDispense(OneChamber); // Trigger the non-blocking stepper
+              }
+              if(pGetLastDispenseInfoCharacteristic) {
+                  pGetLastDispenseInfoCharacteristic->setValue("Manual dispense initiated");
+                  pGetLastDispenseInfoCharacteristic->notify();
+           }
+}
     }
 
     void onRead(BLECharacteristic *pCharacteristic) override {
@@ -244,7 +276,23 @@ void loop() {
         pGetTimeUntilNextDispenseCharacteristic->notify(); // Send notification to subscribed client
         Serial.println("Notified: " + timeVal);
     }
-
+    if (isStepping) {
+        if (millis() - lastStepTime >= stepInterval) {
+            if (stepsRemaining > 0) {
+                myStepper.step(1); // Step one step in the current direction
+                stepsRemaining--;
+                lastStepTime = millis();
+            } else {
+                isStepping = false;
+                deenergizeStepper(); // De-energize coils after movement
+                Serial.println("Dispense complete.");
+                // Optionally, update a BLE characteristic here to indicate completion
+                if(pGetLastDispenseInfoCharacteristic) {
+                    pGetLastDispenseInfoCharacteristic->setValue("Manual dispense completed");
+                    pGetLastDispenseInfoCharacteristic->notify();
+                }
+            }
+        }
 
     delay(10); // Small delay to yield to other tasks (like BLE stack)
 }
