@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Request legacy Bluetooth permissions on older devices. -->
+    <uses-permission android:name="android.permission.BLUETOOTH"
+        android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"
+        android:maxSdkVersion="30" />
+
+    <!-- Request Bluetooth scanning and connection permissions on Android 12+ -->
+    <!-- For BLUETOOTH_SCAN, if you only scan for specific devices and don't derive location,
+         you can add android:usesPermissionFlags="neverForLocation"
+         However, for general BLE scanning, location is often intertwined. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+    <!-- Location permissions:
+         ACCESS_FINE_LOCATION is needed for BLE scanning on Android 6-11.
+         For Android 12+, BLUETOOTH_SCAN is the primary permission for scanning.
+         If your app targets Android 12+ and does not derive physical location from Bluetooth beacons,
+         you might not need location. However, it's often required for reliable scanning. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+    <!-- Add this if your app needs to discover Bluetooth devices and derives physical location -->
+    <!-- <uses-feature android:name="android.hardware.bluetooth_le" android:required="true"/> -->
+
 
     <application
         android:allowBackup="true"
@@ -11,15 +36,14 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Dispenser"
-        tools:targetApi="31" >
+        tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
-            android:theme="@style/Theme.Dispenser" >
+            android:theme="@style/Theme.Dispenser">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>

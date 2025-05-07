@@ -161,10 +161,12 @@ fun DevConnScreen(
             fontWeight = FontWeight.Medium
         )
 
-        // Display last specific error if available
-        if (lastError != null && connectionStatus !is ConnectionStatus.Error) {
-            Text("Last Action Error: $lastError", color = Color.Red)
+        // In DevConnScreen, if using DevConnViewModel.displayError passed as lastError:
+        if (lastError != null) {
+            Text("Error: $lastError", color = Color.Red) // Or use a more generic "Status Message"
         }
+        // And the main status text already handles connectionStatus.Error.
+        // The DevConnViewModel.displayError now handles this logic, so the screen might just display `lastError` if it's not null.
 
 
         // Optional: Disconnect Button (only shown when connected)
