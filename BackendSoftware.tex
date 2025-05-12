@@ -1,3 +1,36 @@
 \section{Microcontroller Programming}
+Before going into the details of how the backend part of programming the device is structured, an overview of the general plan for the backend development is worth looking at. Before starting the implementation, the plan was drafted that would outline important functions that would be needed for the app to communicate properly with the device.
+
+% ---------------------------------------------------
+\begin{description}[style=nextline] % label on its own line
+	% ------------ WRITABLE -------------
+	\item[\textbf{Writable}]%
+	\leavevmode\\[-0.8\baselineskip] % ←-- forces break, trims extra gap
+	\begin{itemize}
+		\item \texttt{Set\_Device\_Time} — synchronize the ESP32 clock.
+		\item \texttt{Set\_Dispense\_Schedule} — add, edit, or delete schedule entries.
+		\item \texttt{Trigger\_Manual\_Dispense} — manually trigger a dispense (logged for traceability).
+	\end{itemize}
+	
+	% ------------ READABLE -------------
+	\item[\textbf{Readable}]%
+	\leavevmode\\[-0.8\baselineskip]
+	\begin{itemize}
+		\item \texttt{Get\_Device\_Time} — read the current device time.
+		\item \texttt{Get\_Dispense\_Schedule} — retrieve the stored schedule.
+		\item \texttt{Get\_Last\_Dispense\_Info} — timestamp + status of the last event.
+		\item \texttt{Get\_Time\_Until\_Next\_Dispense} — countdown to the next dose.
+		\item \texttt{Get\_Dispense\_Log} — full dispense history.
+	\end{itemize}
+	
+	% --------- NOTIFY / INDICATE -------
+	\item[\textbf{Notify/Indicate}]%
+	\leavevmode\\[-0.8\baselineskip]
+	\begin{itemize}
+		\item \texttt{Notify\_Dispense\_Event} — real-time success/failure updates with timestamps.
+		\item \texttt{Notify\_Schedule\_Change\_Confirmation} (optional) — acknowledgement of schedule edits.
+	\end{itemize}
+\end{description}
+
 \subsection{Important Functions}
 \subsection{Backend-Frontend Integration}
