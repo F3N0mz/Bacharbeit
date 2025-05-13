@@ -1,4 +1,39 @@
 \section{Development of a Remote-APP}
-\subsection{General Outlook}
+The ground structure of a companion app is 3 context windows that are selectable in the drawer menu. 
+
+The first context window is called \textbf{Device Connection}. It contains the button to scan the environment for all the bluetooth devices, which are listed in the list under the \textbf{Found Devices}. At the very bottom there is also a connection status of the app to the device.
+
+The second window is called \textbf{Device Configuration}. It contains all the settings regarding the configuration of device, such as: Time of dispense, schedule template load/save, view current schedule, ability to edit or delete current schedule, as well as adding new schedule template and the schedule save/load indicator. It also contains the information about on-board clock and the ability to set or change it
+
+
+The third window is called \textbf{Monitoring \& Status}. It contains all the miscellaneous information about the device such as: Connection status, Battery Level, Last dispensed time, time until next dispense. The device logs are also available there. Logs contain information about bluetooth connection, information about past dispense events.
+
 \subsection{Device Connection}
 \subsection{Device Configuration}
+  a. Add/Configure Dispense Schedule:
+  i. Time of dispense (up to 3 a day). Get current timer/Clock
+  ii. Save/Load Schedule. Stored in android app
+  
+  b. View Current Schedule:
+  i. Display a clear list of all programmed dispense times and associated details. (Parse T/C info into Calendar info)
+  
+  c. Edit/Delete Schedule:
+  i. Allow modification of existing schedules (time, days, name).
+  ii. Allow removal of unneeded schedules.
+  iii. (Important) Ensure changes are reliably sent and confirmed by the dispenser hardware. (ESP32/App T/C Matching)
+  
+  d. Configure Device Time Get current Clock/Set Current Clock
+  
+\subsection{Monitoring \&  Status}
+
+a. Device Status Display:
+i. Show basic status received from the dispenser:
+1. Connected/Disconnected
+2. Battery Level (ESP32 Function)
+3. Last dispensed time/status (Success/Failure) (Requires Sensor) (Sensor+T/C info)
+4. Current time on the dispenser (to check sync) T/C Info
+5. Time until next dispense T/C Info
+
+b. Dispense History/Log:
+i. Display a log of past dispense events. (Need to configure Logging storage on ESP32, last 30 due to small memory size)
+ii. Information per entry: Timestamp, Scheduled Time, Medication Name (if set), Status (e.g., Dispensed Successfully, Failed, Skipped). This is crucial for tracking adherence.
