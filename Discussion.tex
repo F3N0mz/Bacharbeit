@@ -42,6 +42,15 @@ Despite the project not fully meeting its objectives, the process yielded signif
 \end{enumerate}
 
 
+\subsection{Next steps}
+A lot of work remains to be done. From the side of components it might be worth looking into a stronger stepper motor, as the current one has very narrow margin of error and its performance is highly dependent on battery level. What this means is that when the battery level is low, it might not be able to pull the load of 2 mills and extra weight. The construction of the device itself is mostly fine, although the chamber wheels are a bit loose to reduce amount of contact area and friction. If there is a change in components, it would most certainly also require redisigning the lower deck to fit the new components, as the more powerful stepper motor would also require different (perhaps also bigger) driver.  Replacing the motor would also require better power supply, as a single 18650 battery might not be enough to power it. 
+
+Another area of improvement would be the addition of sensors. Adding sensors would allow more precise control of the chambers (e.g. using hall sensors + magnet on each wing to check whether chambers are aligned), as well as tracking whether the pills were dispensed or disposed using an accelerometer at the bottom of dispense chamber.
+The reason it hasn't been initially done is the lack of documented requirements. On one hand, the project is already quite extensive as it is, on another hand, implementing any of the above mentioned changes would require allocating resources that have already been critically lacking. Doing this would mean revamping a substantial part of the device construction, therefore it is better left for the next iteration of development.
+
+
+
+
 Project management
 	Task was too big
 	Everything done by one person (with the assumption that there would be team work)	
