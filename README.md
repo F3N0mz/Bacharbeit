@@ -1,3 +1,1 @@
-SEMINAR ARBEIT.
-
-Thema Wearables
+Bachelor Arbeit
