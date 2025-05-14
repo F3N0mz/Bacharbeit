@@ -6,6 +6,7 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h> // For characteristic descriptors (optional but good practice)
+#include <Preferences.h>
 
 // Stepper motor configuration
 const int stepsPerRevolution = 2048; // Using 2048 for a full rotation
@@ -16,6 +17,7 @@ const int in3Pin = 6; // In3
 const int in4Pin = 7; // In4
 Stepper myStepper(stepsPerRevolution, in1Pin, in2Pin, in3Pin, in4Pin);
 
+Preferences preferences;
 bool isStepping = false;
 int stepsRemaining = 0;
 unsigned long lastStepTime = 0;
@@ -82,40 +84,47 @@ bool oldDeviceConnected = false;
 // Callback class for characteristic events (writes)
 class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
     void onWrite(BLECharacteristic *pCharacteristic) override {
-        std::string uuid = pCharacteristic->getUUID().toString();
-        std::string value = pCharacteristic->getValue();
         Serial.print("Characteristic ");
-        Serial.print(uuid.c_str());
-        Serial.print(" written: ");
         
-        if (value.length() > 0) {
-            Serial.print("New value: ");
-            for (int i = 0; i < value.length(); i++) {
-                Serial.print(value[i]);
-            }
-            Serial.println();
-        }
+        std::string uuid_str = pCharacteristic->getUUID().toString(); // Use a different name
+        std::string value_str = pCharacteristic->getValue();          // Use a different name
+
+        if (value_str.length() > 0) { // Use value_str
+          Serial.print("New value: ");
+          for (int i = 0; i < value_str.length(); i++) { // Use value_str
+            Serial.print(value_str[i]);
+          }
+          Serial.println();
+      }
 
         // Handle specific characteristic writes
-        if (uuid == CHAR_SET_DEVICE_TIME_UUID) {
-            Serial.println("Set_Device_Time received. Value: " + String(value.c_str()));
-            // TODO: Implement time setting logic
-            // For now, just acknowledge by updating the readable characteristic if it exists
-            if (pGetDeviceTimeCharacteristic) {
-                pGetDeviceTimeCharacteristic->setValue(std::string("Time Set ACK: ") + value);
-                pGetDeviceTimeCharacteristic->notify(); // If notifications are enabled
-            }
-        } else if (uuid == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
-            Serial.println("Set_Dispense_Schedule received. Value: " + String(value.c_str()));
-            // TODO: Implement schedule setting logic
-        } else if (uuid == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
-              Serial.println("Trigger_Manual_Dispense received. Value: " + String(value.c_str()));
+        if (uuid_str == CHAR_SET_DEVICE_TIME_UUID) {
+        Serial.println("Set_Device_Time received. Value: " + String(value_str.c_str()));
+        preferences.putString("devTime", value_str.c_str()); // Save to NVS
+        if (pGetDeviceTimeCharacteristic) {
+            pGetDeviceTimeCharacteristic->setValue(std::string("Time Set ACK: ") + value_str);
+            pGetDeviceTimeCharacteristic->notify();
+        }
+        Serial.println("Device time saved to NVS."); // Console log
+         } else if (uuid_str == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
+        Serial.println("Set_Dispense_Schedule received. Value: " + String(value_str.c_str()));
+        preferences.putString("schedule", value_str.c_str()); // Save to NVS
+        // Update the readable characteristic as well
+        if (pGetDispenseScheduleCharacteristic) {
+            pGetDispenseScheduleCharacteristic->setValue(value_str); // Update with the new schedule
+            pGetDispenseScheduleCharacteristic->notify();
+        }
+          Serial.println("Dispense schedule saved to NVS."); // Console log
+        }  else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
+              Serial.println("Trigger_Manual_Dispense received. Value: " + String(value_str.c_str()));
               if (!isStepping) { // Only start if not already stepping
                   startDispense(OneChamber); // Trigger the non-blocking stepper
               }
               if(pGetLastDispenseInfoCharacteristic) {
                   pGetLastDispenseInfoCharacteristic->setValue("Manual dispense initiated");
                   pGetLastDispenseInfoCharacteristic->notify();
+                  preferences.putString("lastDisp", "Manual dispense initiated"); // Also save here
+                  Serial.println("Last dispense (initiated) saved to NVS.");
            }
 }
     }
@@ -151,21 +160,20 @@ class MyServerCallbacks : public BLEServerCallbacks {
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Pill Dispenser Starting...");
+    preferences.begin("pilldisp", false); // Initialize Preferences early
 
     // --- Stepper Motor Setup ---
     Serial.println("Initializing Stepper Motor...");
-    myStepper.setSpeed(10); // Set speed, e.g., 10 RPM
+    myStepper.setSpeed(10);
     Serial.println("Stepper Motor Initialized.");
 
     // --- BLE Setup ---
     Serial.println("Initializing BLE...");
-    BLEDevice::init("PillDispenserESP32"); // Set device name
-
+    BLEDevice::init("PillDispenserESP32");
     BLEServer *pServer = BLEDevice::createServer();
-    pServer->setCallbacks(new MyServerCallbacks()); // Set server callbacks
-
+    pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
+
 
     // --- Writable Characteristics ---
     pSetDeviceTimeCharacteristic = pService->createCharacteristic(
@@ -194,10 +202,10 @@ void setup() {
     pGetDeviceTimeCharacteristic = pService->createCharacteristic(
                                        CHAR_GET_DEVICE_TIME_UUID,
                                        BLECharacteristic::PROPERTY_READ |
-                                       BLECharacteristic::PROPERTY_NOTIFY // Allow notifications
+                                       BLECharacteristic::PROPERTY_NOTIFY
                                    );
     pGetDeviceTimeCharacteristic->setValue("Device Time: Not Set");
-    pGetDeviceTimeCharacteristic->addDescriptor(new BLE2902()); // Needed for notifications
+    pGetDeviceTimeCharacteristic->addDescriptor(new BLE2902());
 
     pGetDispenseScheduleCharacteristic = pService->createCharacteristic(
                                              CHAR_GET_DISPENSE_SCHEDULE_UUID,
@@ -231,6 +239,18 @@ void setup() {
     pGetDispenseLogCharacteristic->setValue("Log: Empty");
     pGetDispenseLogCharacteristic->addDescriptor(new BLE2902());
 
+    String loadedTime = preferences.getString("devTime", "Device Time: Not Set");
+    pGetDeviceTimeCharacteristic->setValue(loadedTime.c_str());
+    Serial.print("Loaded device time: "); Serial.println(loadedTime);
+
+    String loadedSchedule = preferences.getString("schedule", "Schedule: Empty");
+    pGetDispenseScheduleCharacteristic->setValue(loadedSchedule.c_str());
+    Serial.print("Loaded schedule: "); Serial.println(loadedSchedule);
+
+    // You might also want to load a default/persisted value for LastDispenseInfo, etc.
+    String lastDispense = preferences.getString("lastDisp", "Last Dispense: None");
+    pGetLastDispenseInfoCharacteristic->setValue(lastDispense.c_str());
+    Serial.print("Loaded last dispense: "); Serial.println(lastDispense);
     // --- Start BLE Service and Advertising ---
     pService->start();
     BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
@@ -288,11 +308,12 @@ void loop() {
                 Serial.println("Dispense complete.");
                 // Optionally, update a BLE characteristic here to indicate completion
                 if(pGetLastDispenseInfoCharacteristic) {
-                    pGetLastDispenseInfoCharacteristic->setValue("Manual dispense completed");
-                    pGetLastDispenseInfoCharacteristic->notify();
-                }
+                      pGetLastDispenseInfoCharacteristic->setValue("Manual dispense initiated");
+                      pGetLastDispenseInfoCharacteristic->notify();
+                      preferences.putString("lastDisp", "Manual dispense initiated"); // <-- ADD THIS
+                      Serial.println("Last dispense info (initiated) saved to NVS."); // <-- Optional log
+                  }
             }
         }
-
-    delay(10); // Small delay to yield to other tasks (like BLE stack)
+  delay(10);
 }

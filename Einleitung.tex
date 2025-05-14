@@ -31,7 +31,7 @@ This project is divided into several major steps:
 	\item{\textbf{\textbf{Development of the interface between the device and the app}}}
 	This is the final step where everything comes together. The device will communicate with the Android app. It will be able to send (usage statistics, current time, time until next delivery, etc.) and receive (configuration settings, forced delivery command, etc.) information.
 \end{enumerate}
-The table contains more detailed and precise steps to be taken during this project. Please note that it has been expanded and therefore includes more steps. This means that several steps from the table below are combined into one step from the list above. More specifically, steps 1.0 and 2.0 belong to the \textbf{Design and Development of the Body} section, and steps 3.0 and 4.0 belong to the \textbf{Construction and 3D-Printing of the Design} section.
+The table contains more detailed and precise steps to be taken during this project. Please note that it has been expanded and therefore includes more steps. This means that several steps from the table below are combined into one step from the list above. More specifically, steps 1.0 and 2.0 belong to the \hyperref[sec:Bodydesign]{Design and development of the Body} section, and steps 3.0 and 4.0 belong to the \hyperref[sec:3DPrint]{Construction and 3D-Print of Design} section.
 \newpage
 \begin{table}[h!]
 	\centering
@@ -58,3 +58,21 @@ The table contains more detailed and precise steps to be taken during this proje
 	\caption{Project planning table}
 	\label{tab:projektplanung}
 \end{table}
+\newpage
+\subsection{Tools and Technologies}
+For each step there is a different toolset that will be covered here and then mentioned in the chapter of the particular step if necessity arises. Here are the tools that have been used:
+
+\begin{enumerate}
+	\item \textbf{Organisation and Project Management}
+	\begin{itemize}
+		\item\textbf{GitHub}
+		
+		Is a version control tool that has been used for bug-fixing, change tracking and logging of the work done. It is used extensively for \hyperref[sec:FrontenddDev]{Frontend} and \hyperref[sec:Backenddev]{Backend} development steps. 
+		\item\textbf{AI Tools}
+		\newline These tools are used mostly for troubleshooting and debugging. The process is usually this: When there is an issue that is hard to resolve, the description of the problem and all relevant information is then fed into all 3 of the used Language Models, the resulting solution is usually not something taken verbatim from one, but rather an inspiration to create an own solution based on suggestions gathered from all models. This is done so because these models can be confidently incorrect at times, which, if their advice is taken without understanding, can lead to a deeper level of confusion.
+		\newline - \textbf{OpenAI ChatGPT}
+		\newline - \textbf{Google Gemini 2.5 Pro + AI Studio}
+		\newline - \textbf{Deepseek R1}
+		
+	\end{itemize}
+\end{enumerate}
