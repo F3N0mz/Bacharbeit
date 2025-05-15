@@ -63,16 +63,27 @@ The table contains more detailed and precise steps to be taken during this proje
 For each step there is a different toolset that will be covered here and then mentioned in the chapter of the particular step if necessity arises. Here are the tools that have been used:
 
 \begin{enumerate}
-	\item \textbf{Organisation and Project Management}
+	\item\textbf{Organisation and Project Management}
 	\begin{itemize}
 		\item\textbf{GitHub}
 		
-		Is a version control tool that has been used for bug-fixing, change tracking and logging of the work done. It is used extensively for \hyperref[sec:FrontenddDev]{Frontend} and \hyperref[sec:Backenddev]{Backend} development steps. 
+		Is a version control tool that has been used for bug-fixing, change tracking and logging of the work done. It is used extensively for \hyperref[sec:FrontenddDev]{Frontend} and \hyperref[sec:Backenddev]{Backend} development steps. It is also used to synchronize work from different machines. The project is organized in such a way, that source code for Microcontroller, Android App are all within the same repository.
 		\item\textbf{AI Tools}
-		\newline These tools are used mostly for troubleshooting and debugging. The process is usually this: When there is an issue that is hard to resolve, the description of the problem and all relevant information is then fed into all 3 of the used Language Models, the resulting solution is usually not something taken verbatim from one, but rather an inspiration to create an own solution based on suggestions gathered from all models. This is done so because these models can be confidently incorrect at times, which, if their advice is taken without understanding, can lead to a deeper level of confusion. It will also be mentioned in the work whenever AI was used to generate solution.
-		\newline - \textbf{OpenAI ChatGPT}
+		\newline These tools are used mostly for troubleshooting and debugging. The process is usually this: When there is an issue that is hard to resolve, the description of the problem and all relevant information is then fed into all 3 of the used Language Models, the resulting solution is usually not something taken verbatim from one, but rather an inspiration to create an own solution based on suggestions gathered from all models. This is done so because these models can be confidently incorrect at times, which, if their advice is taken without understanding, can lead to a deeper level of confusion. It will also be mentioned in the work whenever AI was used to generate solution. 
+		
+		These three are used together in a way described earlier:
+		\newline - \textbf{OpenAI ChatGPT o3}
 		\newline - \textbf{Google Gemini 2.5 Pro + AI Studio}
 		\newline - \textbf{Deepseek R1}
+		\newline \textbf{GitHub Copilot} is integrated within \ac{VSCode} as a plugin. It is sparingly used whenever there are smaller issues, mostly syntax errors to be fixed, as unlike the three models mentioned above it is not a thinking model.
 		
 	\end{itemize}
+	\item\textbf{3D Model Prototyping and Design}
+	\begin{itemize}
+		\item\textbf{Fusion 360} was the primary \ac{CAD} software used for all stages of 3D modeling. It is the main and only tool used for Prototyping  \hyperref[sec:Bodydesign]{Earlier Sketches} and creating \hyperref[sec:3DPrint]{3D models} of the finalized prototype. Unlike other 3D-Modeling software that relies primarily on meshes (Blender, 3DMax), Fusion 360 Uses parametric design which is more precise, with further slicing for 3D-Printing (further facilitated by built-in export to .stl feature) and contains a wide toolset of analytical features (such as Interference, Center of Mass and Section Analysis which were used extensively). Its parametric nature also allows easy adjustment of dimensions of components whenever an overlap between them happens.
+		
+		\item\textbf{PrusaSlicer} This software is used as an intermediary step between a 3D-model and 3D-printer. Since printers require a set of commands to execute and a .stl is a geometry data, there needs to be an interpreter software which would translate this data into an instruction set (G-Code, although PrusaSlicer has a very convenient feature of transferring this code directly to the printer if computer with the slicer and 3D-Printer are connected to the internet). All of the prints have been done with the default built in template for Prusa MK4S called \textbf{0.20mm STRUCTURAL}. Some models required support material to be added and since original template doesn't have them enabled (either for autogeneration or for printing) this template would then be adjusted to include printing supports.
+	\end{itemize}
+	\item\textbf{Frontend Development}
+	\item\textbf{Backend Development}
 \end{enumerate}
