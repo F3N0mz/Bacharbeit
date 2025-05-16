@@ -7,7 +7,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,9 +27,11 @@ import com.example.dispenser.ui.theme.DispenserTheme // Import your theme for pr
 /**
  * Represents a found Bluetooth device simplified for UI display.
  */
+// In DevConnScreen.kt (or a more general model file if you create one)
 data class UiBluetoothDevice(
     val address: String,
-    val name: String? // Name can be null
+    val name: String?,
+    val isPillDispenser: Boolean = false // New flag
 )
 
 /**
@@ -51,24 +56,22 @@ sealed class ConnectionStatus {
  */
 @Composable
 fun DevConnScreen(
-    // Parameters representing the state received from a ViewModel
-    scanStatus: ConnectionStatus, // Indicates if currently scanning, etc.
-    foundDevices: List<UiBluetoothDevice>, // List of devices found during scan
-    connectionStatus: ConnectionStatus, // Current connection status to the selected device
-    connectingDevice: UiBluetoothDevice?, // The device currently being connected to
-    lastError: String?, // Any recent error message
-
-    // Callbacks to trigger actions in a ViewModel
+    scanStatus: ConnectionStatus,
+    foundDevices: List<UiBluetoothDevice>,
+    connectionStatus: ConnectionStatus,
+    connectingDevice: UiBluetoothDevice?,
+    lastError: String?,
     onStartScanClick: () -> Unit,
-    onStopScanClick: () -> Unit, // May be needed to manually stop scan
-    onDeviceClick: (UiBluetoothDevice) -> Unit, // Called when a device in the list is clicked
-    onDisconnectClick: () -> Unit // Optional: Button to manually disconnect
+    onStopScanClick: () -> Unit,
+    onDeviceClick: (UiBluetoothDevice) -> Unit,
+    onDisconnectClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp) // Apply padding here
+            .padding(16.dp)
     ) {
+        // ... (Scan Button and Status - no changes here) ...
         Text(
             text = "Bluetooth Device Connection",
             fontSize = 20.sp,
@@ -90,18 +93,16 @@ fun DevConnScreen(
                         onStartScanClick()
                     }
                 },
-                // Disable button if already connecting or connected
                 enabled = connectionStatus !is ConnectionStatus.Connecting && connectionStatus !is ConnectionStatus.Connected
             ) {
                 Text(if (scanStatus == ConnectionStatus.Scanning) "Stop Scan" else "Start Scan")
             }
 
-            // Display scan status
             when (scanStatus) {
                 ConnectionStatus.Scanning -> Text("Scanning...", color = Color.Blue)
-                ConnectionStatus.Disconnected -> Text("Scan stopped.") // Assuming Disconnected for scan status means stopped
+                ConnectionStatus.Disconnected -> Text("Scan stopped.")
                 is ConnectionStatus.Error -> Text("Scan Error: ${scanStatus.message}", color = Color.Red)
-                else -> Unit // Don't show anything for other connection statuses in the scan status area
+                else -> Unit
             }
         }
 
@@ -111,37 +112,37 @@ fun DevConnScreen(
         // --- Found Devices List ---
         Text("Found Devices:", fontWeight = FontWeight.SemiBold)
 
-        // Show message if no devices found or scanning hasn't started
         if (foundDevices.isEmpty() && scanStatus != ConnectionStatus.Scanning) {
             Text("Start scan to find devices.")
         } else if (foundDevices.isEmpty() && scanStatus == ConnectionStatus.Scanning) {
-            Text("Searching...") // Or show a spinner
+            Text("Searching...")
         } else {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f) // Make the list fill available space
+                    .weight(1f)
             ) {
                 items(foundDevices, key = { it.address }) { device ->
                     DeviceListItem(
                         device = device,
-                        onClick = { onDeviceClick(device) }
+                        onClick = { onDeviceClick(device) }, // ViewModel handles logic if it can connect
+                        connectionStatus = connectionStatus // Pass connection status
                     )
-                    Divider() // Separator between items
+                    Divider()
                 }
             }
         }
 
-
         Spacer(modifier = Modifier.height(16.dp))
 
         // --- Connection Status Display ---
+        // ... (no changes here) ...
         Text("Connection Status:", fontWeight = FontWeight.SemiBold)
         Spacer(modifier = Modifier.height(4.dp))
 
         val statusText = when (connectionStatus) {
             ConnectionStatus.Disconnected -> "Disconnected"
-            ConnectionStatus.Scanning -> "Scanning (Scan status)" // Should not happen here
+            ConnectionStatus.Scanning -> "Status: Idle (Scan is separate)"
             ConnectionStatus.Connecting -> "Connecting to ${connectingDevice?.name ?: connectingDevice?.address ?: "..."}..."
             ConnectionStatus.Connected -> "Connected to ${connectingDevice?.name ?: connectingDevice?.address ?: "Device"}"
             is ConnectionStatus.Error -> "Connection Error: ${connectionStatus.message}"
@@ -150,7 +151,7 @@ fun DevConnScreen(
         val statusColor = when (connectionStatus) {
             ConnectionStatus.Connected -> Color.Green
             ConnectionStatus.Disconnected -> Color.Red
-            ConnectionStatus.Scanning -> Color.Gray // Should not happen here
+            ConnectionStatus.Scanning -> Color.Gray
             ConnectionStatus.Connecting -> Color.Blue
             is ConnectionStatus.Error -> Color.Red
         }
@@ -161,15 +162,10 @@ fun DevConnScreen(
             fontWeight = FontWeight.Medium
         )
 
-        // In DevConnScreen, if using DevConnViewModel.displayError passed as lastError:
-        if (lastError != null) {
-            Text("Error: $lastError", color = Color.Red) // Or use a more generic "Status Message"
+        if (lastError != null && connectionStatus !is ConnectionStatus.Error) { // Show general error if not already a conn error
+            Text("Last Action Error: $lastError", color = Color.Red)
         }
-        // And the main status text already handles connectionStatus.Error.
-        // The DevConnViewModel.displayError now handles this logic, so the screen might just display `lastError` if it's not null.
 
-
-        // Optional: Disconnect Button (only shown when connected)
         if (connectionStatus is ConnectionStatus.Connected) {
             Spacer(modifier = Modifier.height(8.dp))
             Button(onClick = onDisconnectClick) {
@@ -185,30 +181,63 @@ fun DevConnScreen(
  * Displays a single item in the list of found Bluetooth devices.
  */
 @Composable
-fun DeviceListItem(device: UiBluetoothDevice, onClick: () -> Unit) {
-    Card( // Using Card for a slightly nicer look
+fun DeviceListItem(
+    device: UiBluetoothDevice,
+    onClick: (UiBluetoothDevice) -> Unit, // Pass the whole device object
+    connectionStatus: ConnectionStatus // Pass current connection status to disable clicking connected items
+) {
+    val isConnectable = device.isPillDispenser && // Must be our dispenser
+            connectionStatus != ConnectionStatus.Connecting && // Not already connecting
+            connectionStatus != ConnectionStatus.Connected    // Not already connected to *any* device
+
+    // Determine background color
+    val backgroundColor = when {
+        device.isPillDispenser && isConnectable -> Color(0xFFE6FFED) // Light green for connectable dispenser
+        device.isPillDispenser && !isConnectable -> Color(0xFFD3D3D3) // Grey for non-connectable dispenser (e.g. already connected)
+        else -> Color.Transparent // Default for other devices
+    }
+
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .clickable(onClick = onClick) // Make the whole item clickable
+            .clickable(
+                enabled = isConnectable, // Only clickable if it's a dispenser and we're not busy
+                onClick = { if (device.isPillDispenser) onClick(device) }
+            ),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor) // Apply background color
     ) {
-        Column(
+        Row(
             modifier = Modifier
                 .padding(12.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = device.name ?: "Unknown Device", // Show "Unknown Device" if name is null
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = device.address,
-                fontSize = 12.sp,
-                color = Color.Gray
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = device.name ?: "Unknown Device",
+                    fontWeight = FontWeight.Bold,
+                    color = if (device.isPillDispenser) MaterialTheme.colorScheme.primary else LocalContentColor.current
+                )
+                Text(
+                    text = device.address,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            if (device.isPillDispenser) {
+                Text(
+                    text = "Dispenser",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
         }
     }
 }
-
 // --- Previews ---
 
 @Preview(showBackground = true)

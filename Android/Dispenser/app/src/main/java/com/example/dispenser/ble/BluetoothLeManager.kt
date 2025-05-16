@@ -167,11 +167,42 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
                     Log.w(TAG, "Missing BLUETOOTH_CONNECT for device name on API 31+. Address: ${device.address}")
                     null
                 }
-                val uiDevice = UiBluetoothDevice(address = device.address, name = deviceName)
+
+                // *** MODIFICATION START ***
+                val isLikelyDispenser = deviceName?.startsWith("PillDispenserESP32", ignoreCase = true) == true
+                // You could also check advertised service UUIDs here if available in scan record,
+                // but name is often easier for initial filtering.
+                // result.scanRecord?.serviceUuids?.any { it.uuid == GattAttributes.SERVICE_UUID } == true
+
+                val uiDevice = UiBluetoothDevice(
+                    address = device.address,
+                    name = deviceName,
+                    isPillDispenser = isLikelyDispenser // Set the flag here
+                )
+                // *** MODIFICATION END ***
+
 
                 if (!_foundDevices.value.any { it.address == uiDevice.address }) {
-                    _foundDevices.value = _foundDevices.value + uiDevice
-                    Log.d(TAG, "Found device: Name: ${uiDevice.name ?: "N/A"}, Address: ${uiDevice.address}")
+                    _foundDevices.value = (_foundDevices.value + uiDevice).sortedWith(
+                        compareByDescending<UiBluetoothDevice> { it.isPillDispenser } // Sort to show dispensers first
+                            .thenBy { it.name ?: "" }
+                    )
+                    Log.d(
+                        TAG,
+                        "Found device: Name: ${uiDevice.name ?: "N/A"}, Address: ${uiDevice.address}, IsDispenser: ${uiDevice.isPillDispenser}"
+                    )
+                } else {
+                    // Optional: Update existing device if its isPillDispenser status changes (e.g., due to updated advertisement)
+                    _foundDevices.value = _foundDevices.value.map {
+                        if (it.address == uiDevice.address && it.isPillDispenser != uiDevice.isPillDispenser) {
+                            uiDevice // Update with new status
+                        } else {
+                            it
+                        }
+                    }.sortedWith( // Re-sort if an update happened
+                        compareByDescending<UiBluetoothDevice> { it.isPillDispenser }
+                            .thenBy { it.name ?: "" }
+                    )
                 }
             }
         }
@@ -182,7 +213,7 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
 
         override fun onScanFailed(errorCode: Int) {
             Log.e(TAG, "BLE Scan Failed with error code: $errorCode")
-            _isScanning.value = false // Ensure scanning state is updated
+            _isScanning.value = false
             _connectionStatus.value = ConnectionStatus.Error("Scan failed, code: $errorCode")
         }
     }
