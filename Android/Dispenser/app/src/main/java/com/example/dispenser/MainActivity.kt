@@ -38,7 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
-
+import com.example.dispenser.screens.DeviceConfigurationScreen
+import com.example.dispenser.screens.MonitoringStatusScreen
 
 class MainActivity : ComponentActivity() {
 
