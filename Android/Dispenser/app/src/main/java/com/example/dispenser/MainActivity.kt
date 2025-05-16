@@ -233,8 +233,8 @@ fun AppScaffoldWithDrawer(
                             )
                         }
                     }
-                    "Device Configuration" -> DeviceConfigurationScreen()
-                    "Monitoring & Status" -> MonitoringStatusScreen()
+                    "Device Configuration" -> DeviceConfigurationScreen(devConnViewModel = devConnViewModel)
+                    "Monitoring & Status" -> MonitoringStatusScreen(devConnViewModel = devConnViewModel)
                     else -> Text("Error: Unknown Screen Selected")
                 }
             }
