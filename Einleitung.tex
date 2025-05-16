@@ -85,5 +85,25 @@ For each step there is a different toolset that will be covered here and then me
 		\item\textbf{PrusaSlicer} This software is used as an intermediary step between a 3D-model and 3D-printer. Since printers require a set of commands to execute and a .stl is a geometry data, there needs to be an interpreter software which would translate this data into an instruction set (G-Code, although PrusaSlicer has a very convenient feature of transferring this code directly to the printer if computer with the slicer and 3D-Printer are connected to the internet). All of the prints have been done with the default built in template for Prusa MK4S called \textbf{0.20mm STRUCTURAL}. Some models required support material to be added and since original template doesn't have them enabled (either for autogeneration or for printing) this template would then be adjusted to include printing supports.
 	\end{itemize}
 	\item\textbf{Frontend Development}
+	\begin{itemize}
+		
+		\item \textbf{Android Development Studio + Kotlin} This combination is a industry standard in Android development. Google has established that Kotlin is preferred language for developing an Android apps \cite{googleIO2019Kotlin}. 
+		
+		\textbf{Android Development Studio} \ac{IDE} is a joint project of Google and JetBrains, an innovative \ac{IDE} development company. it has many powerful features such as Previews, Device Emulators, Layout Editor and Gradle Build System. These features have alleviated the development process.
+		
+		\textbf{Kotlin} was chosen because an alternative would be Java, which is not personally preferred development language. Besides being industry standard, Kotlin has very easy-to-understand syntax, \textit{Null-Safety} (a feature of the language, which prevents certain variables to have a null values i.e. value, the pointer of which doesn't have an address), that prevents very common Null-pointer exception runtime errors and also google's official trainings and tutorials which were essential in learning the language. 
+	\end{itemize}
 	\item\textbf{Backend Development}
+	\begin{itemize}
+		
+		\item \textbf{VSCode + Platform.io + C++} Similar to the Frontend development step, this is also quite common choice for programming. \ac{VSCode} offers a wide variety of plugins, due to being open source, and Platform.io is one of them. 
+		
+		\textbf{VSCode} is chosen mostly because of ease of use and flexibility. It is Open-Source, therefore there has been a huge community effort to develop plugins and also one can adjust almost every component of the editor as one sees fit, for example by creating and running custom scripts.
+		
+		\textbf{Platform.io} has many important features, such as Microcontroller templates, built-in C++ and Arduino libraries, Device monitoring (data from connected device can be logged into terminal) and Upload of compiled code. As mentioned before, it is a standard for Arduino software development and enjoys a wide support from the community. This is important not only for the development of a device, but also for maintenance of its code in the future, should a project be further expanded.
+		
+		\textbf{C++} Was chosen because of efficiency, due to being one of the lower-level programming languages, close to hardware, while also being able to abstract away, reducing the need to manually flip bits on the hardware. Furthermore, unlike C, another commonly used language for hardware programming, C++ supports \ac{OOP}, whose features (Incapsulation, Polymorphism, Inheritance) offer aid in programming a device.
+		
+	\end{itemize}
+	
 \end{enumerate}
