@@ -64,8 +64,6 @@ void startDispense(int numSteps) {
 #define CHAR_GET_LAST_DISPENSE_INFO_UUID    "40d3b5d8-5480-4b7b-a115-5fe86bf17d7d"
 #define CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID "4b14acc4-768a-43e1-9d6c-0d97307e2666"
 #define CHAR_GET_DISPENSE_LOG_UUID            "6f182da7-c5a8-40ab-a637-f97ed6b5777b"
-// You might also want a characteristic for battery level if it's battery powered
-// #define CHAR_BATTERY_LEVEL_UUID "..."
 
 // Pointers to BLE Characteristics (so we can update them later)
 BLECharacteristic *pSetDeviceTimeCharacteristic;
@@ -116,16 +114,29 @@ class MyCharacteristicCallbacks : public BLECharacteristicCallbacks {
         }
           Serial.println("Dispense schedule saved to NVS."); // Console log
         }  else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
-              Serial.println("Trigger_Manual_Dispense received. Value: " + String(value_str.c_str()));
-              if (!isStepping) { // Only start if not already stepping
-                  startDispense(OneChamber); // Trigger the non-blocking stepper
-              }
-              if(pGetLastDispenseInfoCharacteristic) {
-                  pGetLastDispenseInfoCharacteristic->setValue("Manual dispense initiated");
-                  pGetLastDispenseInfoCharacteristic->notify();
-                  preferences.putString("lastDisp", "Manual dispense initiated"); // Also save here
-                  Serial.println("Last dispense (initiated) saved to NVS.");
-           }
+            Serial.println("Trigger_Manual_Dispense received. Value: " + String(value_str.c_str()));
+            if (!isStepping) { // Only start if not already stepping
+                startDispense(OneChamber); // Trigger the non-blocking stepper
+
+                // Update characteristic to indicate dispensing started
+                if(pGetLastDispenseInfoCharacteristic) {
+                    // Using a more descriptive message including a timestamp for uniqueness
+                    unsigned long currentTime = millis();
+                    String progressMessage = "Dispensing... Started at: " + String(currentTime);
+                    pGetLastDispenseInfoCharacteristic->setValue(progressMessage.c_str());
+                    pGetLastDispenseInfoCharacteristic->notify();
+                    preferences.putString("lastDisp", progressMessage.c_str());
+                    Serial.println("Last dispense (in progress) saved to NVS.");
+                }
+            } else {
+                Serial.println("Dispense command ignored, motor is busy.");
+                // Notify the app that the command was ignored
+                if(pGetLastDispenseInfoCharacteristic) {
+                    pGetLastDispenseInfoCharacteristic->setValue("Dispense command ignored: busy");
+                    pGetLastDispenseInfoCharacteristic->notify();
+                    // No need to save "ignored" to preferences as "last dispense"
+                }
+            }
 }
     }
 
@@ -169,7 +180,7 @@ void setup() {
 
     // --- BLE Setup ---
     Serial.println("Initializing BLE...");
-    BLEDevice::init("PillDispenserESP32");
+    BLEDevice::init("PillDispenserESP32"); 
     BLEServer *pServer = BLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
@@ -306,14 +317,17 @@ void loop() {
                 isStepping = false;
                 deenergizeStepper(); // De-energize coils after movement
                 Serial.println("Dispense complete.");
-                // Optionally, update a BLE characteristic here to indicate completion
+
                 if(pGetLastDispenseInfoCharacteristic) {
-                      pGetLastDispenseInfoCharacteristic->setValue("Manual dispense initiated");
-                      pGetLastDispenseInfoCharacteristic->notify();
-                      preferences.putString("lastDisp", "Manual dispense initiated"); // <-- ADD THIS
-                      Serial.println("Last dispense info (initiated) saved to NVS."); // <-- Optional log
-                  }
+                    unsigned long completeTime = millis();
+                    String completionMessage = "Dispense complete. Finished at: " + String(completeTime);
+                    pGetLastDispenseInfoCharacteristic->setValue(completionMessage.c_str());
+                    pGetLastDispenseInfoCharacteristic->notify();
+                    preferences.putString("lastDisp", completionMessage.c_str()); // Save the completion status
+                    Serial.println("Last dispense info (complete) saved to NVS.");
+                }
             }
         }
   delay(10);
+}
 }

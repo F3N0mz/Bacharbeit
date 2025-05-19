@@ -194,3 +194,12 @@ As mentioned earlier, one of the goals of the project is to make the device buil
 
 As for material selection, Prusa MK4S (and many other printers) support printing with \ac{PLA} plastic. This material has many advantages: it is biodegradable (it is a polymer of lactic acid), lightweight, sterile \cite{raj2018case}, doesn't produce as much fumes(but still dues) as standard \ac{ABS} plastic \cite{manoj2021review}, due to lower printing temperature and is easy to print with. However, certain disadvantages should be mentioned: Heat deflection at around 55-60 degrees \cite{tabi2019effect} means it cannot be washed with boiling water as it would warp the body. Pure \ac{PLA} is food safe \cite{conn1995safety}, however the pigments might not be, so any wear might introduce microparticles that might not be as safe to consume if colored \ac{PLA} is chosen.
 
+Printing components that are exactly equally sized (e.g. a mill with diameter of 180mm to fit inside a ring with inner diameter) has a certain problem associated with it, which must be considered when designing and printing the device. The current models have already had this issue addressed: all interlocking components are made with certain tolerance (1mm for Mills, 0.2mm for Lower Deck). The Printer has nozzle diameter of 0.4mm \cite{PrusaMK4Specs}, which means that horizontal (x-y axis) resolution is exactly that. It cannot print features smaller than its nozzle diameter, therefore, usage of small body features, extrusions etc was avoided during design process.
+\begin{figure}[b!]
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Slicer3}
+	\caption[Issue when slicing]{Issue when slicing. On the upper image (1) the supports are out of printing bounds, the ominous red aura points at this problem. On the lower image (2) the problem is fixed. The component was rotated, so that the sticking-out parts of it are given a certain distance from the border to be able to draw support}
+	\label{fig:slicer3}
+\end{figure}
+
+

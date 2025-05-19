@@ -1,14 +1,29 @@
 \section{Development of a Remote-APP}\label{sec:FrontendDev}
-The ground structure of a companion app is 3 context windows that are selectable in the drawer menu. 
+Disclaimer: AI was extensively used to generate the code for this app. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints.
 
-The first context window is called \textbf{Device Connection}. It contains the button to scan the environment for all the bluetooth devices, which are listed in the list under the \textbf{Found Devices}. At the very bottom there is also a connection status of the app to the device.
+Existence of a remote app is one of the main requirements and a hardest one. The problem here lies in the amount of choices one needs to do upfront, which also contributes to uncertainty about the extent of the project, which will be talked about in \hyperref[sec:discussion]{Results Section} in greater detail. For platform, Android was chosen. Alternatives were Web-based User Interface with Javascript+HTML or IOS. Android was chosen over WebUI or IOS solely from personal preference. A significant amount of time was also spent designing the structure of an app to make it ergonomic, to separate all the functions into different context windows.
 
-The second window is called \textbf{Device Configuration}. It contains all the settings regarding the configuration of device, such as: Time of dispense, schedule template load/save, view current schedule, ability to edit or delete current schedule, as well as adding new schedule template and the schedule save/load indicator. It also contains the information about on-board clock and the ability to set or change it
+The App is structurally subdivided into multiple parts: 
+\begin{enumerate}
+	\item \textbf{Bluetooth connection interface} (\textit{com.example.dispenser.ble}) package Consists of 2 files: BluetoothLeManager.kt and GattAttributes.kt. 
+	
+	\textbf{BluetoothLeManager.kt} contains all the functions needed to establish bluetooth communication with the microcontroller using \ac{BLE} protocol, such as environment scan, dispenser identification, reading and writing data using \ac{BLE}.
+	
+	\textbf{GattAttributes.kt} contains all the \ac{UUID}s used by the microcontroller with names assigned to them, to avoid magic numbers in the code and replace them with named constants. This is a common practice everywhere, especially in microcontroller programming (where even a value of 0 is often rather depicted as LOW in the code, to avoid confusion)
+	\item \textbf{User Interface} (\textit{com.example.dispenser.screens}) package consists of 3 files that represent their assigned context windows:
+	\begin{itemize}
+		\item \textbf{DevConnScreen.kt} Contains the code for the UI of the "Device Connection" view. It contains the button to scan the environment for all the bluetooth devices, which are listed in the list under the \textbf{Found Devices}. At the very bottom there is also a connection status of the app to the device. When There is also a detection method (based on the device name) to detect the pill dispenser. The app will not attempt to connect to any other device.
 
+		\item \textbf{DevConfScreen.kt} Contains the code for the UI of the "Device Configuration" view. It contains all the settings regarding the configuration of device, such as: Time of dispense, schedule template load/save, view current schedule, ability to edit or delete current schedule, as well as adding new schedule template and the schedule save/load indicator. It also contains the information about on-board clock and the ability to set or change it
+		
+		\item \textbf{DevMonitoringScreen.kt} Contains the code for the UI of the "Monitoring \& Status" view. It contains all the miscellaneous information about the device such as: Connection status, Last dispensed time, time until next dispense. The device logs are also available there. Logs contain information about bluetooth connection, information about past dispense events.
+		
+	\end{itemize}
 
-The third window is called \textbf{Monitoring \& Status}. It contains all the miscellaneous information about the device such as: Connection status, Last dispensed time, time until next dispense. The device logs are also available there. Logs contain information about bluetooth connection, information about past dispense events.
+\end{enumerate}
 
 \subsection{Device Connection}
+
 \subsection{Device Configuration}
   a. Add/Configure Dispense Schedule:
   i. Time of dispense (up to 3 a day). Get current timer/Clock

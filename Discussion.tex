@@ -1,6 +1,6 @@
-\section{Results Analysis and Discussion}
+\section{Results Analysis and Discussion}\label{sec:discussion}
 
-This section provides an analysis of the project's outcomes and a critical discussion of the development process. The project involved a wide range of tasks spanning multiple technical domains. While valuable experience was gained and certain components were progressed, such as 3D printed housing, an existing prototype of an Android app and some backend code, the overall integration and functionality targeted by the initial objectives were not fully achieved. Consequently, the final result is evaluated as not meeting the predefined success criteria. The success criterion was this: A fully functioning Pill Dispenser with a remote app to remotely control it. This discussion will explore the contributing factors, focusing on challenges encountered in project management and technical execution, reflect on the lessons learned, and propose directions for future work. Contextualizing these challenges is crucial for understanding the project's trajectory and final state.
+This section provides an analysis of the project's outcomes and a critical discussion of the development process. The project involved a wide range of tasks spanning multiple technical domains. While valuable experience was gained and certain components were progressed, such as 3D printed body, an existing prototype of an Android app and some backend code, the overall integration and functionality targeted by the initial objectives were not fully achieved. Consequently, the final result is evaluated as not meeting the predefined success criteria. The success criterion was this: A fully functioning Pill Dispenser with a remote app to remotely control it. This discussion will explore the contributing factors, focusing on challenges encountered in project management and technical execution, reflect on the lessons learned, and propose directions for future work. Contextualizing these challenges is crucial for understanding the project's trajectory and final state.
 
 \subsection{Challenges Encountered}
 
@@ -19,7 +19,7 @@ Effective project management proved to be a significant challenge, stemming prim
 
 \subsubsection{Technical Complexity and Resource Constraints}
 
-The project's ambitious scope required integrating expertise from several distinct technical fields, which posed considerable hurdles for a single developer.
+The project's ambitious scope required integrating expertise from several distinct technical fields, which posed considerable problems for a single developer.
 \begin{enumerate}
 	\item \textbf{Scope and Expertise Mismatch}: The project necessitated skills in 3D modeling and printing, Android application development, and microcontroller programming with Bluetooth Low Energy (BLE) communication. While 3D design and printing were navigated successfully, providing valuable practical insights, they consumed a significant portion of the available time.
 	\item \textbf{Software Development Learning Curve}: The software development aspects presented steep learning curves:
@@ -48,13 +48,16 @@ A lot of work remains to be done. From the side of components it might be worth 
 Another area of improvement would be the addition of sensors. Adding sensors would allow more precise control of the chambers (e.g. using hall sensors + magnet on each wing to check whether chambers are aligned), as well as tracking whether the pills were dispensed or disposed using an accelerometer at the bottom of dispense chamber.
 The reason it hasn't been initially done is the lack of documented requirements. On one hand, the project is already quite extensive as it is, on another hand, implementing any of the above mentioned changes would require allocating resources that have already been critically lacking. Doing this would mean revamping a substantial part of the device construction, therefore it is better left for the next iteration of development.
 
+There is also a big area for improvement in the Android App. Due to limited experience and knowledge about current state-of-the-art frontend development paradigm, its usability could further be improved. For this, information like user journey(what functions does user use the most and how long does it take them to get there) need to be collected. Certain functions could also be implemented the other way. For example, bluetooth connection could be done through Android settings and device pairing, removing the need for the device connection screen completely.
 
 
 
-Project management
-	Task was too big
-	Everything done by one person (with the assumption that there would be team work)	
-Personal
-	Reluctance to engage deeper
-	Lack of motivation
-	general state of disorganization
+
+%Project management
+%	Task was too big
+%	Everything done by one person (with the assumption that there would be team work)	
+%Personal
+%	Reluctance to engage deeper
+%	Lack of motivation
+%	general state of disorganization
+%
