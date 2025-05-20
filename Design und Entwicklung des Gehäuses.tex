@@ -12,19 +12,20 @@ When thinking about how the pills should be dispensed, a number of ideas inspire
 	\item The third design is that of the \textbf{Conveyor Belt}. On the image \ref{fig:designs} you can see that it is round, but it could theoretically also be designed elliptically or with other, more complex curves. The principle is as follows: An output chamber is attached to the belt, which moves a series of these chambers along a specific path. It is similar to the revolver system, but the chambers would be removable and the conveyor belt would allow some flexibility in the design of the device. The main disadvantages are the need for a motor, the need for a chamber management system and the overall complexity of the device.
 	\item The fourth design is inspired by \textbf{Vending Machines}. It would have 21 chambers, each with an electromagnet attached. Each time a pill is to be dispensed, the electromagnet is activated, causing the chamber to move and the pills to fall onto the dispensing area. In this design, the stepper motor becomes redundant, but simplicity is lost as a logical circuit is required to connect 21 chambers in parallel. Theoretically, a parallel circuit would be advantageous, but this is not the case for us, as we cannot leverage this advantage sensibly.
 \end{itemize}
-\subsubsection{Pill Disposal System}
-The idea for the Disposal system at the time was that it would mirror the dispensing system, either by being positioned directly underneath it or in such a way that the tablets would first fall onto a ramp, which after a certain time would be transported into the return mechanism by another action. It is not difficult to see that the choice of disposal system is highly dependent on the dispensing system we develop, so a more detailed description will be given later when we look in more detail at the chosen dispense system.
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_1.png} 
+	\includegraphics[width=0.7\linewidth]{Figures/Designs.png} 
 	\caption[Early drafts]{Initial ideas on how the main structure (dispenser) of the device should look. 1. Revolver system. 2. carousel system. 3. conveyor system (running sushi). 4 Vending machine system}
 	\label{fig:designs}
 \end{figure}
+\subsubsection{Pill Disposal System}
+The idea for the Disposal system at the time was that it would mirror the dispensing system, either by being positioned directly underneath it or in such a way that the tablets would first fall onto a ramp, which after a certain time would be transported into the return mechanism by another action. It is not difficult to see that the choice of disposal system is highly dependent on the dispensing system we develop, so a more detailed description will be given later when we look in more detail at the chosen dispense system.
+
 \newpage
 \subsection{Selection of the Design}
 Of all the proposed designs, the revolver system seemed to be the most sensible choice, but it required some improvements in the design. A brief market research (e.g. \cite{LiveFinePillDispenser} \cite{zoksi_pill_organizer}) showed that there is not really such a system that would meet the above requirements of having a built-in disposal mechanism. For this reason, the design would have to be improved.
 \subsubsection{Improvements to the Revolver system}
-Now that we have chosen the main mechanism, we need to work out the details. The design philosophy was to make it as simple as possible, with as few moving details as possible. The first ideas were not very successful in this respect. In the picture \ref{fig:screenshot1} you can see what the earlier ideas would look like. In such a design, each chamber would have its own door, under that door would be a notch for the lever to fall into to open it. The pills would then fall into the disposal tray. After a certain amount of time (15 minutes), the S-shaped arm would rotate and drop the pills further down the ramp into the disposal storage. This solution had numerous disadvantages:
+Now that we have chosen the main mechanism, we need to work out the details. The design philosophy was to make it as simple as possible, with as few moving details as possible. The first ideas were not very successful in this respect. In the picture \ref{fig:screenshot1} you can see what the earlier ideas would look like. In such a design, each chamber would have its own door, under that door would be a notch for the lever to fall into to open it. The pills would then fall into the disposal tray. After a certain amount of time (15 minutes), the S-shaped arm on the disposal platform would rotate and drop the pills further down the ramp into the disposal storage. This solution had numerous disadvantages:
 \begin{enumerate}
 	\item{\textbf{Too many moving parts}}
 	
@@ -40,7 +41,7 @@ Due to these disadvantages, the system was discarded and never further improved.
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.7\linewidth]{Figures/Untitled-2}
-	\caption[First revolver prototype]{First revolver prototype. Here you can see that initial idea was to have a trapdoor in each chamber which will release the pills onto the disposal dish by opening it.}
+	\caption[First revolver prototype]{First revolver prototype. Here you can see that initial idea was to have a trapdoor in each chamber which will release the pills onto the disposal dish by opening it. (1) Is a designed prototype, (2) is a photo of 3D-printed prototype}
 	\label{fig:screenshot1}
 \end{figure}
 \newpage
@@ -51,24 +52,27 @@ Having realized that we need to get rid of the extra space that the separate bod
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.7\linewidth]{Figures/PSPD2}
-	\caption[2 Variant of the pill dispenser.]{Second variant of the pill dispenser.}
+	\caption[2 Variant of the pill dispenser.]{Second variant of the pill dispenser, with unevenly sized chambers}
 	\label{fig:pspd2}
 \end{figure}
 
 Because this system doesn't have a separate mechanism for removing unused pills, another new method would have to be developed for this too. In the image \ref{fig:screenshot2} you can see how the chambers of the disposal system look like. The cover of the disposal system has an opening (part 2 of the same image) that is shut when the pills have to be taken. When the upper mechanism rotates to dispose new pills, the lower mechanism rotates to send pills into disposal chamber simultaneously. Ridges are added to the cover of disposal system to prevent pills from accidentally rolling away.
 
-\begin{figure}
+\begin{figure}[h]
 	\centering
-	\includegraphics[width=0.7\linewidth]{Figures/PSPD2-Chambers}
-	\caption[Disposal system of 2nd revolver system]{Disposal system of 2nd revolver system}
+	\includegraphics[width=0.6\linewidth]{Figures/PSPD2-Chambers}
+	\caption[Disposal system of 2nd revolver system]{Decomposed Disposal system of 2nd revolver system. (1) Shows the Lower Mill without cover. the whole construction would be rotating, covered by a ring with a cutout, seen on (2)}
 	\label{fig:screenshot2}
 \end{figure}
 \newpage
 However, there are still ways to improve this approach. While much better than the previous one, this one also have some disadvantages:
 \begin{enumerate}
-\item \textbf{Chambers of the upper mechanism are smaller.} The chambers of pill storage are significantly smaller. We can calculate chamber volume using the following formulas:
+\item \textbf{Chambers of the upper mechanism are smaller.} The chambers of pill storage are significantly smaller, as clearly seen on image \ref{fig:pspd2}. We can calculate chamber volume using the following formulas:
 \[
-A = \pi r_1^2 - \pi r_0^2,\quad V = A \cdot h
+A = \pi r_1^2 - \pi r_0^2,\quad 
+\]
+\[
+V = A \cdot h
 \]
 For the upper chamber: \( r_1 = 100\,\text{mm} \),\( r_0 = 47.5\,\text{mm} \), \( h = 18\,\text{mm} \), the result is:
 \[
@@ -78,7 +82,7 @@ For the lower chamber:  \( r_1 = 135\,\text{mm} \), \( r_0 = 80\,\text{mm} \), \
 \[
 V = 668.69\,\text{cm}^3
 \]
-As we can see, the lower chambers are almost 1.5 bigger than the upper ones, which is a waste that we might want to get rid of.
+As we can see, the lower chambers are almost 1.5 times bigger than the upper ones, which is a waste that we might want to get rid of.
 	\item{\textbf{Synchronous movement of both chambers}} This approach makes future development less flexible. independence of the chambers is a degree of freedom that we might want to keep somehow. The biggest problem with current approach is that it might lead to situations where some pills might fall too fast from the top to fall directly into an opening in time.
 	\item{\textbf{Reliance on a ramp for pills to fall down.}} This can introduce an undesired behavior where some sticky pills might stick to the ramp and not fall down. This can lead to very dangerous scenario where a pill, not properly dispenced in time, would fall down with the next batch which would then lead to overdose.
 \end{enumerate}

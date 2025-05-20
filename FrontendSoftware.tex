@@ -1,16 +1,16 @@
 \section{Development of a Remote-APP}\label{sec:FrontendDev}
-Disclaimer: AI was extensively used to generate the code for this app. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints.
+\textbf{AI Disclaimer}: AI was extensively used to generate  code for the App. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints. Motivation and methodology of the use of AI will be discussed in the \hyperref[sec:discussion]{Results Analysis and Discussion} section.
 
 Existence of a remote app is one of the main requirements and a hardest one. The problem here lies in the amount of choices one needs to do upfront, which also contributes to uncertainty about the extent of the project, which will be talked about in \hyperref[sec:discussion]{Results Section} in greater detail. For platform, Android was chosen. Alternatives were Web-based User Interface with Javascript+HTML or IOS. Android was chosen over WebUI or IOS solely from personal preference. A significant amount of time was also spent designing the structure of an app to make it ergonomic, to separate all the functions into different context windows.
 
 The App is structurally subdivided into multiple parts: 
 \begin{enumerate}
-	\item \textbf{Bluetooth connection interface} (\textit{com.example.dispenser.ble}) package Consists of 2 files: BluetoothLeManager.kt and GattAttributes.kt. 
+	\item \textbf{Bluetooth connection interface} (\textit{\textbf{com.example.dispenser.ble}}) package Consists of 2 files: \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. 
 	
 	\textbf{BluetoothLeManager.kt} contains all the functions needed to establish bluetooth communication with the microcontroller using \ac{BLE} protocol, such as environment scan, dispenser identification, reading and writing data using \ac{BLE}.
 	
 	\textbf{GattAttributes.kt} contains all the \ac{UUID}s used by the microcontroller with names assigned to them, to avoid magic numbers in the code and replace them with named constants. This is a common practice everywhere, especially in microcontroller programming (where even a value of 0 is often rather depicted as LOW in the code, to avoid confusion)
-	\item \textbf{User Interface} (\textit{com.example.dispenser.screens}) package consists of 3 files that represent their assigned context windows:
+	\item \textbf{User Interface} (\textit{\textbf{com.example.dispenser.screens}}) package consists of 3 files that represent their assigned context windows:
 	\begin{itemize}
 		\item \textbf{DevConnScreen.kt} Contains the code for the UI of the "Device Connection" view. It contains the button to scan the environment for all the bluetooth devices, which are listed in the list under the \textbf{Found Devices}. At the very bottom there is also a connection status of the app to the device. When There is also a detection method (based on the device name) to detect the pill dispenser. The app will not attempt to connect to any other device.
 
@@ -18,10 +18,64 @@ The App is structurally subdivided into multiple parts:
 		
 		\item \textbf{DevMonitoringScreen.kt} Contains the code for the UI of the "Monitoring \& Status" view. It contains all the miscellaneous information about the device such as: Connection status, Last dispensed time, time until next dispense. The device logs are also available there. Logs contain information about bluetooth connection, information about past dispense events.
 		
+		\item \textit{\textbf{com.example.dispenser.screens.devconnection}} package contains a class called \textbf{DevConnViewModel.kt} that contains functions related to updating the state of the connection view. It provides live update on information sent and received between the Device and the App, using \textit{\textbf{\mbox{BluetoothLeManager}}}. 
+		
+		\item \textit{\textbf{com.example.dispenser.ui.theme}} package defines the application style: colors, fonts, themes etc.
 	\end{itemize}
-
+	\item \textit{\textbf{AndroidManifest.xml}} Declares information about the App: Permissions,  hardware requirements for the device, \textbf{MainActivity.kt} as an executive function (similar to main.c in C).
 \end{enumerate}
 
+The next section will cover in specific detail the initial requirements given to the AI to generate the code, as well as the results of the code review and how it actually functions.
+\subsection{Bluetooth Connection Interface}
+The requirements for bluetooth connection are on the side of Android App are as follows:
+\begin{enumerate}
+	\item Scan for devices, identify the device that is a Pill Dispenser (using Name as an identificator)
+	\item Connect to the device using \ac{BLE}
+	\item Read Characteristics(\ac{GATT} Attributes): 
+	\begin{itemize}
+		\item \textbf{CHAR\_GET\_DEVICE\_TIME\_UUID} to get the current time set on the dispenser.
+		\item \textbf{CHAR\_GET\_DISPENSE\_SCHEDULE\_UUID} to get the currently programmed dispense schedule from the dispenser.
+		\item \textbf{CHAR\_GET\_LAST\_DISPENSE\_INFO\_UUID} to get information about the most recent dispense event
+		\item \textbf{CHAR\_GET\_TIME\_UNTIL\_NEXT\_DISPENSE\_UUID} to get the remaining time until the next scheduled dispense.
+		\item \textbf{CHAR\_GET\_DISPENSE\_LOG\_UUID} retrieve a log of past dispense events.
+	\end{itemize}
+	\item Write characteristics (Also \ac{GATT} Attributes):
+	\begin{itemize}
+		\item \textbf{CHAR\_SET\_DEVICE\_TIME\_UUID} to send the current time from the App to the dispenser.
+		\item \textbf{CHAR\_SET\_DISPENSE\_SCHEDULE\_UUID} to send a new dispense schedule (time) to the dispenser.
+		\item \textbf{CHAR\_TRIGGER\_MANUAL\_DISPENSE\_UUID} to send a command to make the dispenser dispense pills immediately.
+	\end{itemize}
+	\item Manually disconnect from device
+\end{enumerate}
+All these initial requirements were implemented in code. \ac{GATT} attributes are a synchronous requirement that also exists for the backend, therefore, these attributes will also be seen in the \hyperref[sec:Backenddev]{Microcontroller Programming} section. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Code block \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
+
+\begin{lstlisting}[style=kotlinstyle,caption={\ac{GATT} attributes defined in a separate file},label={lst:GATTs},float=htbp,language=Kotlin,numbers=left]
+// GattAttributes.kt
+package com.example.dispenser.ble
+
+import java.util.UUID
+
+object GattAttributes {
+	// Service UUID
+	val SERVICE_UUID: UUID = UUID.fromString("03339647-3f4e-43df-abff-fac54287cf1a")
+	
+	// Writable Characteristics
+	val CHAR_SET_DEVICE_TIME_UUID: UUID = UUID.fromString("65232f1d-618a-4268-9050-0548142a4536")
+	val CHAR_SET_DISPENSE_SCHEDULE_UUID: UUID = UUID.fromString("999c584e-06c0-49a1-995a-66b7c802ac1b")
+	val CHAR_TRIGGER_MANUAL_DISPENSE_UUID: UUID = UUID.fromString("36bb95f2-e57e-4db9-b9aa-fb6541ee784e")
+	
+	// Readable Characteristics
+	val CHAR_GET_DEVICE_TIME_UUID: UUID = UUID.fromString("272ee276-e37e-4d78-8c5e-bb7225d35074")
+	val CHAR_GET_DISPENSE_SCHEDULE_UUID: UUID = UUID.fromString("b53c2ed4-ae26-476d-8414-011a025dddfc")
+	val CHAR_GET_LAST_DISPENSE_INFO_UUID: UUID = UUID.fromString("40d3b5d8-5480-4b7b-a115-5fe86bf17d7d")
+	val CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID: UUID = UUID.fromString("4b14acc4-768a-43e1-9d6c-0d97307e2666")
+	val CHAR_GET_DISPENSE_LOG_UUID: UUID = UUID.fromString("6f182da7-c5a8-40ab-a637-f97ed6b5777b")
+	
+	// Descriptor for enabling notifications/indications
+	val CLIENT_CHARACTERISTIC_CONFIG_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+}
+\end{lstlisting}
+One interesting property of Kotlin as a programming language can be seen in this code. Line 4 contains an import of a Java library, this means that Kotlin is interoperable with Java and can use its libraries.
 \subsection{Device Connection}
 
 \subsection{Device Configuration}

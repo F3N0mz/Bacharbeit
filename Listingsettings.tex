@@ -1,0 +1,66 @@
+\usepackage{listings}
+\usepackage{color}
+
+\definecolor{darkgray}{rgb}{0.4,0.4,0.4}
+% Define custom colors (light-mode-like)
+\definecolor{keywordcolor}{rgb}{0.0, 0.0, 0.5}      % dark blue
+\definecolor{commentcolor}{rgb}{0.0, 0.5, 0.0}      % dark green
+\definecolor{stringcolor}{rgb}{0.58, 0.0, 0.82}     % purple
+\definecolor{bgcolor}{rgb}{1, 1, 1}                 % white background
+\definecolor{identifiercolor}{rgb}{0.2, 0.2, 0.2}   % dark gray
+
+\lstset{%
+	basicstyle=\color{darkgray}\ttfamily\footnotesize, % font style and size
+	keywordstyle=\color{black}\bf,                      % keyword style
+	identifierstyle=\bfseries,                          % identifiers in bold
+	commentstyle=\color{blue}\it,                       % comment style
+	stringstyle=,                                       % string style (default)
+	frame=single,                                       % box around listings
+	showstringspaces=false                              % no special marking in strings
+	numbers=left,                % keep numbers on the left
+	numberstyle=\scriptsize,     % ← optional: a bit smaller than the code
+	numbersep=5pt,               % ← distance number ↔ code
+	xleftmargin=1.5em,           % ← move everything 1.5 em to the right
+	framexleftmargin=1.5em,      % ← move the frame by the *same* amount
+	tabsize=2,       
+	breaklines=true,
+	breakatwhitespace=false,
+	postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},	            
+}
+
+\lstdefinelanguage{kotlin}{
+	morekeywords={
+		abstract, actual, annotation, as, break, by, catch, class, companion, const,
+		constructor, continue, crossinline, data, delegate, do, else, enum, expect,
+		external, false, final, finally, for, fun, get, if, import, in, infix, init,
+		inline, inner, interface, internal, is, it, lateinit, noinline, null, object,
+		open, operator, out, override, package, private, protected, public, reified,
+		return, sealed, set, super, suspend, tailrec, this, throw, true, try, typealias,
+		val, var, vararg, when, where, while, yield
+	},
+	sensitive=true,
+	morecomment=[l]{//},
+	morecomment=[s]{/*}{*/},
+	morestring=[b]",
+	morestring=[b]',
+}
+
+\lstdefinestyle{kotlinstyle}{
+	language=kotlin,
+	backgroundcolor=\color{bgcolor},
+	basicstyle=\ttfamily\footnotesize\color{identifiercolor},
+	keywordstyle=\color{keywordcolor}\bfseries,
+	commentstyle=\color{commentcolor}\itshape,
+	stringstyle=\color{stringcolor},
+	numbers=left,
+	numberstyle=\scriptsize\color{gray},
+	numbersep=6pt,
+	frame=single,
+	tabsize=2,
+	showstringspaces=false,
+	breaklines=true,
+	breakatwhitespace=false,
+	postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+	xleftmargin=1.5em,
+	framexleftmargin=1.5em
+}

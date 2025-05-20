@@ -63,10 +63,10 @@ The measurements are:
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.6\linewidth]{Figures/Uppermill}
-	\caption[Upper Mill]{Upper Mill. 1 View from above. 2 view from below}
+	\caption[Upper Mill]{Upper Mill. (1) View from above. (2) view from below}
 	\label{fig:uppermill}
 \end{figure}
-Upper mill consists of 21 functional chambers and one service chamber. the service chamber is needed to cover the hole in the upper body, so that at any time, 21 chambers are available. Inner rim is designed as a  cogwheel. It has 88 teeth, it will be important later for the stepper motor movement calculation. The gear was designed using a free tool called DXF and SVG GEAR DXF GENERATOR \cite{evolvent_spur_gear_generator}.
+Depicted on image \ref{fig:uppermill}, Upper mill consists of 21 functional chambers and one service chamber. the service chamber is needed to cover the hole in the upper body, so that at any time, 21 chambers are available. Inner rim is designed as a  cogwheel. It has 88 teeth, it will be important later for the stepper motor movement calculation. The gear was designed using a free tool called DXF and SVG GEAR DXF GENERATOR \cite{evolvent_spur_gear_generator}.
 These parameters were chosen to match the size of the cog and amount of teeth needed: 
 \begin{itemize}
 	\item Gear 1 Tooth Count: $-88$ (internal gear)
@@ -99,7 +99,7 @@ The measurements of the upper mill are:
 	\caption[Lower Mill]{Lower mill. 1 view from above. 2 view from below}
 	\label{fig:lowermill}
 \end{figure}
-Lower mill consists of 22 chambers which are the same. This is done to make sure that the sizes of upper and lower mill chambers are the same. Just as with the upper mill, inner ring is also a cogwheel, designed the same way and with the same parameters as upper mill. Unlike the upper mill, lower mill doesn't have teeth to connect. The teeth of upper mill are inserted into teeth of cogwheel of the lower mill.
+Depicted on image \ref{fig:lowermill}, Lower mill consists of 22 chambers which are the same. This is done to make sure that the sizes of upper and lower mill chambers are the same. Just as with the upper mill, inner ring is also a cogwheel, designed the same way and with the same parameters as upper mill. Unlike the upper mill, lower mill doesn't have teeth to connect. The teeth of upper mill are inserted into teeth of cogwheel of the lower mill.
 
 The upper part also contains a ring that is 2 mm above the rest of the construction. This ring exists to eliminate the friction between the ceiling (which is a floor of the upper mill) and the chambers. 
 
@@ -121,7 +121,7 @@ The measurements of lower mill are:
 	\caption[Lower Body]{Lower Body. 1 view from above. 2 view from below}
 	\label{fig:lowerbody}
 \end{figure}
-Lower body is a bit more complex than the upper one. It is designed to connect multiple electronic components, Stepper motor, motor driver - directly, charger and microcontroller - indirectly, through the lower deck.
+Depicted on image \ref{fig:lowerbody}, Lower body is a bit more complex than the upper one. It is designed to connect multiple electronic components, Stepper motor, motor driver - directly, charger and microcontroller - indirectly, through the lower deck.
 
 On the inner side there is a ring around which the lower mill rotates. This ring also separates the chamber area and electronics area. inside this ring there are cutouts for stepper motor, driver and wires.
 
@@ -144,21 +144,21 @@ The measurements of lower body are:
 \subsubsection{Electronics}
 \begin{figure}
 	\centering
-	\includegraphics[width=0.5\linewidth]{Figures/Motor}
+	\includegraphics[width=0.9\linewidth]{Figures/Motor}
 	\caption[Connection schema of electronic components]{Connection schema of electronic components. Components from top to bottom: 1)28BYJ Stepper motor 2) Left: Charger Module 3)Right: ULN2003 Motor Driver 4)Left:Panasonic NCR18650B Battery 5)Right ESP32 S3 DevKitC-1 N16R8 S3 Microcontroller}
 	\label{fig:motor}
 \end{figure}
-The device needs a microcontroller and a stepper motor for control. There are many options from which to choose, therefore we need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diameter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
+The device needs a microcontroller and a stepper motor for control. We need to know what we need for our electronics to filter out possible choices. Microcontroller needs to be able to control a stepper motor and also to have a network interface, Wi-Fi or Bluetooth, so that we can host an user interface somewhere else. Stepper motor needs to have enough torque to rotate 2 mills and a load. We don't need a high performance stepper motor, since our rotational speed is not that important. also it should be noticed that there is a gear reduction of 4:1 on the gears which results in 4 times higher torque for 4 times lower speed. From the measurements above we know that the diameter of mill is 200 mm, the weight is hard to calculate, but we can access the calculation used by the slicer software. The results are 44 g for Lower mill, and 61 g for Upper mill for 105g in total. The extra weight from pills would be around 100g for 205g in total. While there has been no calculation involved, the setup was tested with the coins to serve as a load, however it was tested only with the lower mill attached. We will come back to discuss the results in the later part of the document. Considering also that the one of the goals of the project was to develop the device for as cheap as possible, a 28BYJ \cite{stepper} stepper motor was chosen, together with the ULN2003\cite{ti_uln2003a_revT_2025} Motor driver.
 
 For the microcontroller, an ESP32 S3 DevKitC-1 N16R8 ESP32 S3 was selected \cite{microcontroller}. it is a common choice to pair this microcontroller and stepper motor and it has the network interface (both Wi-Fi and Bluetooth). For us a \ac{BLE} is of particular interest. It allows us to save battery, since we don't need a constant stream of data exchange between a smartphone and device.
 
-Another addition to the electronics is inclusion of battery. While not a requirement, battery-powered device is much more convenient to use as it makes it independent from being located near a socket. For this, Panasonic NCR18650B \cite{panasonic_ncr18650b} Battery was selected. 
+Another addition to the electronics is inclusion of battery. While not a requirement, battery-powered device is much more convenient to use as it makes it independent from being located near a socket. For this, Panasonic NCR18650B \cite{panasonic_ncr18650b} Battery was selected. Image \ref{fig:motor} Shows the connection schema of selected components.
 \newpage
 \subsubsection{Lower Deck(Electronics compartment)}
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_13}
-	\caption[Lower Deck]{Lower Deck and its' features: 1)Ridge 2)Microcontroller housing 3)Charger Module housing 4)Battery Wall}
+	\caption[Lower Deck]{Lower Deck and its' features: (1)Ridge (2)Microcontroller housing (3)Charger Module housing (4)Battery Wall}
 	\label{fig:screenshot13}
 \end{figure}
 The lower deck houses three electronic components: Microcontroller, battery charger and battery. It also serves as a cover for the stepper motor, whereas the driver would be located on the opposite side of the lower body, inside the ring. The shape of the lower deck is quite more complex than that of the previous bodies, therefore it makes sense to divide the description of it into multiple parts. on the image \ref{fig:screenshot13} you can see the lower deck and a numbers that point to the parts of components. Here is a description of all the components of this body:
@@ -177,7 +177,7 @@ Lower deck also features a long hole for a slide-in lid which you can see to the
 	\caption[Stand]{Stand}
 	\label{fig:screenshot14}
 \end{figure}
-Stand is a simple design that features 2 distinct components: Pillars to the sides to hold the device and a dispensing dock in the front and center of it. The pillars have a cutout to slide down the device into it and notches to prevent the device from tilting backwards. The dispensing dock is designed to match the shape of the device so that it can easily be tilted into it at a 45 degree angle.
+Depicted on \ref{fig:screenshot14},Stand is a simple design that features 2 distinct components: Pillars to the sides to hold the device and a dispensing dock in the front and center of it. The pillars have a cutout to slide down the device into it and notches to prevent the device from tilting backwards. The dispensing dock is designed to match the shape of the device so that it can easily be tilted into it at a 45 degree angle.
 The dimensions are:
 \begin{itemize}
 	\item Stand height from bottom to the peak of stand: 190 mm
