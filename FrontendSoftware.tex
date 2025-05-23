@@ -1,5 +1,5 @@
 \section{Development of a Remote-APP}\label{sec:FrontendDev}
-\textbf{AI Disclaimer}: AI was extensively used to generate  code for the App. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints. Motivation and methodology of the use of AI will be discussed in the \hyperref[sec:discussion]{Results Analysis and Discussion} section.
+\textbf{AI Disclaimer}: AI was extensively used to generate  code for the App. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints. Motivation and methodology for the use of AI will be discussed in the \hyperref[sec:discussion]{Results Analysis and Discussion} section.
 
 Existence of a remote app is one of the main requirements and a hardest one. The problem here lies in the amount of choices one needs to do upfront, which also contributes to uncertainty about the extent of the project, which will be talked about in \hyperref[sec:discussion]{Results Section} in greater detail. For platform, Android was chosen. Alternatives were Web-based User Interface with Javascript+HTML or IOS. Android was chosen over WebUI or IOS solely from personal preference. A significant amount of time was also spent designing the structure of an app to make it ergonomic, to separate all the functions into different context windows.
 
@@ -47,7 +47,10 @@ The requirements for bluetooth connection are on the side of Android App are as 
 	\end{itemize}
 	\item Manually disconnect from device
 \end{enumerate}
-All these initial requirements were implemented in code. \ac{GATT} attributes are a synchronous requirement that also exists for the backend, therefore, these attributes will also be seen in the \hyperref[sec:Backenddev]{Microcontroller Programming} section. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Code block \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
+All these initial requirements were implemented in code. \ac{GATT} attributes form an interfacing protocol contract between the mobile application and the microcontroller. This shared definition ensures both systems can correctly interpret the \ac{BLE} services and characteristics. Consequently, these attributes are mirrored in the microcontroller's firmware, as detailed in Section  \hyperref[sec:Backenddev]{Microcontroller Programming}. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Code block \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
+The standard way of defining it is \textit{val NAME\_UUID: UUID = UUID.fromString("UUID")}, where \textbf{val} defines a read-only nature of the value (similar, but not quite the same as \textit{const} keyword in C++), \textbf{UUID} = UUID... is the Java UUID class.
+
+
 
 \begin{lstlisting}[style=kotlinstyle,caption={\ac{GATT} attributes defined in a separate file},label={lst:GATTs},float=htbp,language=Kotlin,numbers=left]
 // GattAttributes.kt
@@ -76,9 +79,151 @@ object GattAttributes {
 }
 \end{lstlisting}
 One interesting property of Kotlin as a programming language can be seen in this code. Line 4 contains an import of a Java library, this means that Kotlin is interoperable with Java and can use its libraries.
-\subsection{Device Connection}
 
-\subsection{Device Configuration}
+Moving forward, some properties of the Kotlin language need to be established:
+\begin{enumerate}
+	\item \textbf{Mutability}: References to immutable objects or variables cannot be changed once created. When modification appears to happen, a new object (with different reference) is created with the modification applied to new object only \cite{kotlin_variables} \cite{kotlin_collections}.
+	\item \textbf{Null-safety}: default variable declaration forbids it to have a \textit{null} value i.e. definition strictly follows declaration and memory gets immediately allocated to the variable. \textbf{Nullable} (i.e. those which are able to hold \textit{null} value) can be created by appending a '?' symbol e.g.: \textit{var b: String? = null}. It is  compile-time safety feature aimed at reduction of runtime Null-Pointer exceptions \cite{kotlin_null_safety}.
+	\item \textbf{Coroutines and Flows} allow multithreading and simultaneous execution of multiple functions. Coroutines Provide means for writing asynchronous, non-blocking code in a sequential style \cite{kotlin_coroutines}. Flows are asynchronous data streams \cite{kotlin_flow}. 
+	\item \textbf{StateFlow} is a special type of flow that is often used in the code below. It has 3 important Properties: State-Holder (always contains a value), Observable (all state collector functions receive information about state change of this object) and "Hot Flow" (A flow is hot because its active instance exists independently of the presence of collectors. This is opposed to a regular Flow, which is cold and is started separately for each collector)\cite{jetbrains_stateflow}.
+	\item \textbf{Scope Functions (\textit{let, run, with, apply, also})} allow execution of block of code within the context of a given object. Allow referring to an object in different ways and run operations with it as a reference \cite{kotlin_scope_functions}.
+\end{enumerate}
+
+\textbf{BluetoothLeManager.kt} Contains all the logic of the Android app related to interacting with the device. The code block \ref{lst:BLEman} is the top-level structure of the file. at the highest level there is package definition, library imports, service constant TAG used for logging and main. This file itself is too big (740 lines of code) to do an overview line-by-line and its exact functionality is not the scope of this thesis. In this case, a top level overview of the contents of the file will provide the context for understanding the project as a whole, without digging too deep in technical implementation, specifics of the language and the Platform and their interaction with \ac{BLE} protocol.
+
+ \textit{BluetoothLeManager} is a class that contains all functions and values for the interface. It relies heavily on built-in Android Package called \textit{android.bluetooth} \cite{android_bluetooth}. 
+
+The class takes 2 input parameters:
+\begin{enumerate}
+	\item \textit{private val context: Context} to get the \textit{BluetoothManager} (and subsequently the \textit{BluetoothAdapter}) using \textit{context.getSystemService(Context.BLUETOOTH\_SERVICE)} as an entry point to all Bluetooth operations. Consequently, also handles Permissions and \ac{GATT} connections.
+	\item \textit{private val coroutineScope: CoroutineScope} defines the lifecycle and context for any new coroutines launched within it. Since \ac{BLE} operations are asynchronous, this handles it by defining a coroutine on the Android side for each operation.
+\end{enumerate} 
+Next, within the class, objects meant for the correct function of \ac{BLE} are created:
+\begin{itemize}
+	\item \textbf{\_characteristicUpdate} is a private(visible only inside the class), mutable active flow. It's used internally by \textit{BluetoothLeManager} to emit events when a characteristic's value is updated.
+	\item \textbf{characteristicUpdate} is the public(visible outside the class), read-only version of \textit{\_characteristicUpdate}. External classes can read flow information from this variable to be notified of characteristic value changes. \textbf{Note:} StateFlows are paired like that in the code, in the next instances where public and private instance of the same StateFlow are present, both of them will be described under the same bullet point
+	\item \textbf{discoveredCharacteristics} is a private mutable map that stores the \textit{BluetoothGattCharacteristic} objects discovered on the connected peripheral. Values received from the Device are written within this variable.
+	\item \textbf{bluetoothManager} is an instance of the Android Built-in \textit{BluetoothManager} system service\cite{android_bluetooth}. This is the primary entry point for accessing Bluetooth functionality.
+	\item \textbf{bluetoothAdapter} is the local device's Bluetooth adapter(hardware) object, also from built-in Android package \cite{android_bluetooth}. Nullable in case when a device with this App on it doesn't have Bluetooth. With this all standard Bluetooth operations, such as switching on, scanning and  connection can be made.
+	\item \textbf{bleScanner} is An instance of BluetoothLeScanner(a method of built-in Android Bluetooth class) used specifically for scanning for \ac{BLE} devices. \textit{by lazy} is a keyword indicating that this object(\textit{blescanner}) will initialize only when \textit{bluetoothAdapter?.bluetoothLeScanner} is initialized.
+	\item \textbf{scanJob} is a nullable(notice the '?' symbol) Coroutine Job used to manage the lifecycle of an ongoing BLE scan operation. Allows asynchronous scan operation to be started, monitored and cancelled.
+	\item \textbf{connectJob} is a nullable Coroutine Job used to manage the lifecycle of an ongoing \ac{BLE} connection attempt. Allows asynchronous \ac{GATT} connection.
+	\item \textbf{\_foundDevices} is private, mutable StateFlow that holds the current list of discovered \ac{BLE} devices. it gets internally updated by the \textit{leScanCallback} as new devices are found during a scan. While the public version of it Exposes the list of discovered devices to the \textit{DevConnViewModel}, which allows the UI to display found devices.
+	\item \textbf{\_isScanning} is a private, mutable StateFlow indicating whether a scan is currently active. Used internally to track the scanning state and prevent multiple concurrent scans. Public version of it Allows the UI to observe the current scanning status.
+	\item \textbf{\_connectionStatus} is a private, mutable StateFlow which holds the current connection status (e.g., Disconnected, Connecting, Connected, Error). Used internally to reflect the real-time state of the \ac{BLE} link. Public version of it allows UI to display the current connection status and to make decisions based on this state (e.g., enabling/disabling certain actions).
+	\item \textbf{\_connectedDevice} A private, mutable StateFlow, it holds information not only about whether a device is connected, but also about the currently connected device. Public version of it Allows the UI to know which device is currently connected.
+	\item \textbf{currentGatt} is a nullable instance of built-in android BluetoothGatt class from the android.bluetooth package\cite{android_bluetooth} that provides \ac{GATT} client functionality. When a device is not connected, this class can be \textit{null}. It is a main object of all interactions with connected device.
+\end{itemize}
+The next 3 functions are made for permission checks:
+\begin{itemize}
+	\item \textbf{hasPermission} is an utility function to check if a specific permission (passed as a String) has been granted to the application.
+	\item \textbf{hasRequiredScanPermissions} Checks if all necessary permissions for \ac{BLE} scanning are granted. It also contains security features that prevent the App from asking for permissions that might not exist on the device (e.g. when Android version is too old).
+	\item \textbf{hasRequiredConnectPermissions} Serves the same purpose as function above, but this time for connection permissions.
+\end{itemize}
+The following two functions and one object handle the scanning function of the App:
+\begin{itemize}
+	\item \textbf{startScan} is a function that initiates a scan to discover all advertising devices in the reach. It performs permission checks,  Checks if Bluetooth is enabled, Sets \textit{\_isScanning} to true and clears \textit{\_foundDevices}, Starts the scan, Launches a \textit{scanJob} to manage the scan, including a timeout (30 seconds) after which the scan is automatically stopped and finally, Updates \textit{\_connectionStatus} with an error if prerequisites are not met.
+	\item \textbf{stopScan} is a function that Stops an ongoing BLE scan. It Checks if a scan is actually in progress, Calls \textit{bleScanner?.stopScan} using the \textit{leScanCallback}, Sets \textit{\_isScanning} to \textbf{FALSE}, Cancels the \textit{scanJob} and finally, if there is an error during the stopping process, Handles potential Exceptions during the stop operation. 
+	\item \textbf{leScanCallback} is an instance of \textit{ScanCallback} class provided by the bluetooth.le package (it is different package that is made specifically for \ac{BLE} connection) \cite{android_bluetooth_le}. Its methods are invoked by the system when scan events occur. Using this class, device filtering is handled. If scan detects a device called "PillDispenserESP32" it will be marked with the \textit{isPillDispenser} flag, outlining it and putting it at the top of the list of scanned devices.
+\end{itemize}
+The next functions handle the connection logic:
+\begin{itemize}
+	\item \textbf{connectToDevice} is a function that Initiates a \ac{GATT} connection to a \ac{BLE} peripheral specified by its \ac{MAC} address. First, it performs permission and bluetooth availability checks, then retrieves the \textit{BluetoothDevice} object using the provided address, then launches a \textit{connectJob} to handle the asynchronous connection process and finally, calls \textit{deviceToConnect.connectGatt()} with the \textit{gattCallback} to establish the connection.
+	\item \textbf{disconnect} is a function that disconnects from the currently connected \ac{BLE} peripheral and closes the \ac{GATT} client. First, it checks if \textit{currentGatt} is not null i.e. it is connected, then it performs permission checks, afterwards it calls \textit{currentGatt?.disconnect()}, however the actual disconnection and resource cleanup (closing \ac{GATT}) are typically handled in the \textit{onConnectionStateChange} callback and finally it  Cancels the \textit{connectJob} if it was related to an ongoing connection attempt.
+	\item \textbf{writeCharacteristic} function is used to write into the writable characteristics on the device. First, it checks for connect permissions and if \textit{currentGatt} is valid. Then, retrieves the \textit{BluetoothGattCharacteristic} from \textit{discoveredCharacteristics}, so that it will know what writable characteristics are on the device. Then, it verifies that the characteristic supports the specified writeType (verifies that it is writable), calls \textit{currentGatt?.writeCharacteristic()} and finally, if the write operation has successfully been initiated, it returns \textbf{TRUE}.
+	\item \textbf{readCharacteristic} is in nature very similar to \textit{writeCharacteristic}, but for read-only characteristics on the device. First, it checks for connect permissions and retrieves \textit{BluetoothGattCharacteristic} (same as previous function), then verifies the read-only property of the characteristic,  Calls \textit{currentGatt?.readCharacteristic()} and finally, returns \textbf{TRUE} if read operation was initiated successfully.
+	\item \textbf{setCharacteristicNotificationEnabled} is a function that enables or disables notifications (or indications) for a given characteristic. Currently implemented, but not used, might be used for debugging and fine-tuning notifications.
+	\item \textbf{enableNotificationsFor} is a private helper function specifically called during the \textit{onServicesDiscovered} phase. This is a function that is more simple and robust than the one above. It centralizes the logic for enabling notifications for all relevant "GET\_..." characteristics as soon as they are discovered, simplifying the connection setup process
+\end{itemize}
+The next object is a key component for the functionality of the whole \ac{BLE} communication logic. 
+
+\textbf{gattCallback} is an instance of built-in Android class called \textit{BluetoothGattCallback}\cite{android_bluetooth} provided to the \textit{connectGatt} method. This is the heart of managing an active \ac{BLE} connection and its asynchronous events. To accomplish this task, the class has methods built in it:
+\begin{itemize}
+	\item \textbf{onConnectionStateChange} is called when the connection state changes. If connected successfully, it triggers service discovery(\textit{gatt?.discoverServices()}), on disconnection, it closes the \ac{GATT} client.
+	\item \textbf{onServicesDiscovered} is called after \textit{discoverServices()} completes. If successful, it iterates through the services and characteristics of the connected device. It populates the \textit{discoveredCharacteristics} list with relevant characteristics defined in \textit{GattAttributes} (SET/GET/TRIGGER UUIDs). It also calls \textit{enableNotificationsFor()} function for readable characteristics to automatically subscribe to updates. If the required service or critical characteristics are not found, it updates \textit{\_connectionStatus} to an error and disconnects.
+	\item \textbf{onCharacteristicRead} is called when a characteristic read operation completes. 
+	\item \textbf{handleCharacteristicRead} If the read was successful (GATT\_SUCCESS), it emits the characteristic's \ac{UUID} and value to the \textit{\_characteristicUpdate} flow.
+	\item \textbf{onCharacteristicWrite} Called after a characteristic write operation completes. Logs the success or failure. If failed, updates \textit{\_connectionStatus} with an error.
+	\item \textbf{onCharacteristicChanged} is called when the peripheral sends a notification or indication for a characteristic to which the client has subscribed. 
+	\item \textbf{handleCharacteristicChanged} is a method that emits the characteristic's \ac{UUID} and updated value to the \textit{\_characteristicUpdate} flow.
+	\item \textbf{onDescriptorWrite} is called after a descriptor write operation completes (e.g., writing to CCCD to enable/disable notifications). It logs the outcome.
+\end{itemize}
+The final function of the class is \textbf{cleanup} function. It releases all resources used by the \textit{BluetoothLeManager}. this function is called when the model is no longer needed. it resets all states related to Bluetooth to their default state (disconnected, not scanning).
+\begin{lstlisting}[
+	style=kotlinstyle,
+	caption={Top level structure of the BluetoothLeManager.kt file},
+	label={lst:BLEman},
+	language=Kotlin,
+	numbers=left
+	]
+	package com.example.dispenser.ble
+	import . . .
+	private const val TAG = "BluetoothLeManager"
+	
+	class BluetoothLeManager(private val context: Context, private val coroutineScope: CoroutineScope)
+	{
+		private val _characteristicUpdate = MutableSharedFlow<Pair<UUID, ByteArray>>()
+		val characteristicUpdate: SharedFlow<Pair<UUID, ByteArray>> = _characteristicUpdate.asSharedFlow()
+		
+		private val discoveredCharacteristics = mutableMapOf<UUID, BluetoothGattCharacteristic>()
+		
+		private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+		private val bluetoothAdapter: BluetoothAdapter? = bluetoothManager.adapter
+		private val bleScanner by lazy { bluetoothAdapter?.bluetoothLeScanner }
+		
+		private var scanJob: Job? = null
+		private var connectJob: Job? = null
+		
+		private val _foundDevices = MutableStateFlow<List<UiBluetoothDevice>>(emptyList())
+		val foundDevices: StateFlow<List<UiBluetoothDevice>> = _foundDevices.asStateFlow()
+		
+		private val _isScanning = MutableStateFlow(false)
+		val isScanning: StateFlow<Boolean> = _isScanning.asStateFlow()
+		
+		private val _connectionStatus = MutableStateFlow<ConnectionStatus>(ConnectionStatus.Disconnected)
+		val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
+		
+		private val _connectedDevice = MutableStateFlow<UiBluetoothDevice?>(null)
+		val connectedDevice: StateFlow<UiBluetoothDevice?> = _connectedDevice.asStateFlow()
+		
+		private var currentGatt: BluetoothGatt? = null
+		
+		// Helper functions for permission checking
+		private fun hasPermission(permission: String): Boolean
+		private fun hasRequiredScanPermissions(): Boolean
+		private fun hasRequiredConnectPermissions(): Boolean
+		
+		// Scan logic
+		fun startScan()
+		fun stopScan()
+		private val leScanCallback = object : ScanCallback { ... }
+		
+		// Connection logic
+		fun connectToDevice(deviceAddress: String)
+		fun disconnect()
+		
+		// Characteristic operations
+		fun writeCharacteristic(characteristicUUID: UUID, value: ByteArray, writeType: Int = ...): Boolean
+		fun readCharacteristic(characteristicUUID: UUID): Boolean
+		fun setCharacteristicNotificationEnabled(characteristicUUID: UUID, enable: Boolean): Boolean
+		
+		// Notification helper
+		private fun enableNotificationsFor(characteristic: BluetoothGattCharacteristic)
+		
+		// GATT callback
+		private val gattCallback = object : BluetoothGattCallback { ... }
+		
+		// Cleanup
+		fun cleanup()
+		
+	}
+\end{lstlisting}
+
+\subsection{User Interfaces}
+Having finished with describing how the App handles interface between microcontroller using \ac{BLE}, the \ac{GUI} of the app will be covered next. It consists of 3 main views (called \textbf{Device Connection, Device Configuration and Monitoring \&  Status}), each of them contains different information and functions.
+\subsubsection{Device Connection}
+
+\subsubsection{Device Configuration}
   a. Add/Configure Dispense Schedule:
   i. Time of dispense (up to 3 a day). Get current timer/Clock
   ii. Save/Load Schedule. Stored in android app
@@ -93,7 +238,7 @@ One interesting property of Kotlin as a programming language can be seen in this
   
   d. Configure Device Time Get current Clock/Set Current Clock
   
-\subsection{Monitoring \&  Status}
+\subsubsection{Monitoring \&  Status}
 
 a. Device Status Display:
 i. Show basic status received from the dispenser:

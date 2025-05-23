@@ -15,7 +15,7 @@
 	identifierstyle=\bfseries,                          % identifiers in bold
 	commentstyle=\color{blue}\it,                       % comment style
 	stringstyle=,                                       % string style (default)
-	frame=single,                                       % box around listings
+	frame=lines,                                       % box around listings
 	showstringspaces=false                              % no special marking in strings
 	numbers=left,                % keep numbers on the left
 	numberstyle=\scriptsize,     % ← optional: a bit smaller than the code
@@ -46,21 +46,26 @@
 }
 
 \lstdefinestyle{kotlinstyle}{
-	language=kotlin,
-	backgroundcolor=\color{bgcolor},
-	basicstyle=\ttfamily\footnotesize\color{identifiercolor},
-	keywordstyle=\color{keywordcolor}\bfseries,
-	commentstyle=\color{commentcolor}\itshape,
-	stringstyle=\color{stringcolor},
-	numbers=left,
-	numberstyle=\scriptsize\color{gray},
-	numbersep=6pt,
-	frame=single,
-	tabsize=2,
+	language        = kotlin,
+	backgroundcolor = \color{bgcolor},
+	basicstyle      = \ttfamily\footnotesize\color{identifiercolor},
+	keywordstyle    = \color{keywordcolor}\bfseries,
+	commentstyle    = \color{commentcolor}\itshape,
+	stringstyle     = \color{stringcolor},
+	numbers         = left,
+	numberstyle     = \scriptsize\color{gray},
+	numbersep       = 6pt,
+	%
+	frame           = lines,      % ← instead of frame=single
+	%     or:  frame = tb
+	%     or:  frame = trbl        (break-friendly variant)
+	%
+	tabsize         = 2,
 	showstringspaces=false,
-	breaklines=true,
+	breaklines      = true,
 	breakatwhitespace=false,
-	postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
-	xleftmargin=1.5em,
-	framexleftmargin=1.5em
+	postbreak       = \mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+	xleftmargin     = 1.5em,
+	framexleftmargin= 1.5em
 }
+
