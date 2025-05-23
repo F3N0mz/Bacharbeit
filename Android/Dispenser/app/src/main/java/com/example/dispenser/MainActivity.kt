@@ -290,6 +290,7 @@ fun MonitoringStatusScreen() {
 }
 
 // Preview for AppScaffoldWithDrawer might need adjustments or mocks for factory
+@Preview
 @Preview(showBackground = true)
 @Composable
 fun AppScaffoldWithDrawerPreview() {

@@ -26,7 +26,7 @@ The App is structurally subdivided into multiple parts:
 \end{enumerate}
 
 The next section will cover in specific detail the initial requirements given to the AI to generate the code, as well as the results of the code review and how it actually functions.
-\subsection{Bluetooth Connection Interface}
+\subsection{Bluetooth Connection Interface}\label{subsec:Bluetooth}
 The requirements for bluetooth connection are on the side of Android App are as follows:
 \begin{enumerate}
 	\item Scan for devices, identify the device that is a Pill Dispenser (using Name as an identificator)
@@ -105,7 +105,7 @@ Next, within the class, objects meant for the correct function of \ac{BLE} are c
 	\item \textbf{discoveredCharacteristics} is a private mutable map that stores the \textit{BluetoothGattCharacteristic} objects discovered on the connected peripheral. Values received from the Device are written within this variable.
 	\item \textbf{bluetoothManager} is an instance of the Android Built-in \textit{BluetoothManager} system service\cite{android_bluetooth}. This is the primary entry point for accessing Bluetooth functionality.
 	\item \textbf{bluetoothAdapter} is the local device's Bluetooth adapter(hardware) object, also from built-in Android package \cite{android_bluetooth}. Nullable in case when a device with this App on it doesn't have Bluetooth. With this all standard Bluetooth operations, such as switching on, scanning and  connection can be made.
-	\item \textbf{bleScanner} is An instance of BluetoothLeScanner(a method of built-in Android Bluetooth class) used specifically for scanning for \ac{BLE} devices. \textit{by lazy} is a keyword indicating that this object(\textit{blescanner}) will initialize only when \textit{bluetoothAdapter?.bluetoothLeScanner} is initialized.
+	\item \textbf{bleScanner} is An instance of BluetoothLeScanner(a method of built-in Android Bluetooth class) used specifically for scanning for \ac{BLE} devices. \textit{by lazy} is a keyword indicating that this object(\textit{blescanner}) will initialize only when its parent (\textit{bluetoothAdapter?.bluetoothLeScanner})  is initialized.
 	\item \textbf{scanJob} is a nullable(notice the '?' symbol) Coroutine Job used to manage the lifecycle of an ongoing BLE scan operation. Allows asynchronous scan operation to be started, monitored and cancelled.
 	\item \textbf{connectJob} is a nullable Coroutine Job used to manage the lifecycle of an ongoing \ac{BLE} connection attempt. Allows asynchronous \ac{GATT} connection.
 	\item \textbf{\_foundDevices} is private, mutable StateFlow that holds the current list of discovered \ac{BLE} devices. it gets internally updated by the \textit{leScanCallback} as new devices are found during a scan. While the public version of it Exposes the list of discovered devices to the \textit{DevConnViewModel}, which allows the UI to display found devices.
@@ -146,7 +146,7 @@ The next object is a key component for the functionality of the whole \ac{BLE} c
 	\item \textbf{onCharacteristicWrite} Called after a characteristic write operation completes. Logs the success or failure. If failed, updates \textit{\_connectionStatus} with an error.
 	\item \textbf{onCharacteristicChanged} is called when the peripheral sends a notification or indication for a characteristic to which the client has subscribed. 
 	\item \textbf{handleCharacteristicChanged} is a method that emits the characteristic's \ac{UUID} and updated value to the \textit{\_characteristicUpdate} flow.
-	\item \textbf{onDescriptorWrite} is called after a descriptor write operation completes (e.g., writing to CCCD to enable/disable notifications). It logs the outcome.
+	\item \textbf{onDescriptorWrite} is called after a descriptor write operation completes (e.g. to enable/disable notifications). It logs the outcome.
 \end{itemize}
 The final function of the class is \textbf{cleanup} function. It releases all resources used by the \textit{BluetoothLeManager}. this function is called when the model is no longer needed. it resets all states related to Bluetooth to their default state (disconnected, not scanning).
 \begin{lstlisting}[
@@ -218,11 +218,123 @@ The final function of the class is \textbf{cleanup} function. It releases all re
 		
 	}
 \end{lstlisting}
+\newpage
+\subsection{User Interface}
+Having finished with describing how the App handles interface between microcontroller using \ac{BLE}, the \ac{GUI} of the app will be covered next. It consists of 3 main views (called \textbf{Device Connection, Device Configuration and Monitoring \&  Status}), each of them contains different information and functions. Switching between views is done via a drawer panel on the left-hand side of the app, which slides open when the button at the top left is pressed.
 
-\subsection{User Interfaces}
-Having finished with describing how the App handles interface between microcontroller using \ac{BLE}, the \ac{GUI} of the app will be covered next. It consists of 3 main views (called \textbf{Device Connection, Device Configuration and Monitoring \&  Status}), each of them contains different information and functions.
+Once again, before moving forward, there is a certain terminology that needs to be covered. This thesis uses terminology used by official design guide\cite{android_ui_layer} from \textbf{Android Developers} team, which is an industry standard.
+\begin{itemize}
+	\item \textbf{Jetpack Compose} while not a technical term as the others are on the list, Jetpack Compose is the modern toolkit for building native Android \ac{UI}. It defines the paradigm under which all the other terms operate.
+	\item \textbf{ViewModel} class is a business logic or screen level state holder. Its principal advantage is that it caches state and persists it through configuration changes. The alternative to a ViewModel is a plain class that holds the data displayed in the \ac{UI}. This can become a problem when navigating between activities or Navigation destinations. Doing so destroys that data if it isn't stored using the saving instance state mechanism. 
+	\item \textbf{ViewModelFactory} is a class responsible for creating instances of ViewModels. It's needed because ViewModels often have dependencies that need to be provided to them when they are created.
+	\item \textbf{UI State} represents what to show on the screen. For the Device Connection screen, this includes whether the app is currently scanning, the list of found Bluetooth devices, the current connection status (e.g., "Disconnected", "Connecting", "Connected"), and any error messages. This state typically lives in or is managed by the ViewModel.
+	\item \textbf{Composable Function (or "Composable")} This is the fundamental building block of \ac{UI} in Jetpack Compose. Instead of traditional XML layouts, \ac{UI} is defined by writing functions annotated with @Composable. These functions describe what the \ac{UI} should look like for a given state, not how to construct it step-by-step.
+	\item \textbf{Recomposition} is the process of Jetpack Compose re-running Composable functions when their input \textbf{State} changes. If the \textit{scanStatus} (part of the \ac{UI} State) changes from "Disconnected" to "Scanning", Compose will re-run (recompose) only the parts of \ac{UI} that depend on \textit{scanStatus}, updating them automatically. \ac{UI} elements don't need to be manually updated.
+	\item \textbf{Layout Composables (Column, Row, Box)} are special Composables used to arrange other Composables on the screen. Column arranges its children vertically, Row horizontally, and Box allows stacking elements or positioning them relative to its edges.
+	\item \textbf{Event Handling (Callbacks/Lambdas)} is based on user interaction with \ac{UI}. Composables can trigger actions. This is usually done by passing lambda functions (callbacks) as parameters to the Composables.
+	\item \textbf{StateFlow} has already been defined in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section. It is a state-holder observable "hot" flow that always has a value and emits updates to its collectors. This term is even more important here, as it creates a bridge for understanding how User Interface interacts with data. In context of User Interface, it is is a primary mechanism for the \textbf{ViewModel} to expose \ac{UI} \textbf{State} to the Composable. Composable functions can observe (or "collect") these StateFlows, When the StateFlow emits a new value, collectAsState() receives this update and signals to the Compose runtime that the state read by a Composable has changed.
+\end{itemize}
+The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
+
+Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \textit{MainActivity} class's \textit{onCreate} method to set up the UI.
+\textit{AppScaffoldWithDrawer} has numerous tasks:
+\begin{enumerate}
+	\item \textbf{Navigation:} Manages the ModalNavigationDrawer to allows switching between different sections of the app ("Device Connection", "Device Configuration", "Monitoring \& Status").
+	\item \textbf{Screen Switching:} Uses a \textit{when} (similar to \textit{case} and \textit{switch} commands in C/C++) statement to display the appropriate screen in the Scaffold's content area.
+	\item \textbf{ViewModel Access:} It receives the \textit{devConnViewModelFactory} and uses it to obtain an instance of \textit{DevConnViewModel}. This \textit{ViewModel} is then passed down to the relevant screens.
+	\item \textbf{Conditional UI:} It conditionally renders content within the "Device Connection" screen path(e.g. Popups that prompt granting permissions and enabling Bluetooth).
+	\item \textbf{Callbacks:} Passes down callbacks to \textit{MissingPermissionsScreen} and \textit{BluetoothDisabledScreen}.
+\end{enumerate}
+Besides \textit{AppScaffoldWithDrawer} function, there are also various supplementary functions:
+
+\begin{itemize}
+	\item \textbf{MissingPermissionsScreen} is a simple UI screen displayed when the necessary Bluetooth permissions have not been granted by the user.It provides a "Grant Permissions" button that triggers the \textit{onRequestPermissions} callback (which is implemented in \textit{MainActivity}) to launch the permission request.
+	\item \textbf{BluetoothDisabledScreen} is similar to \textit{MissingPermissionsScreen}, but for when Bluetooth is disabled. Also provides an "Enable Bluetooth" button to switch it on.
+	\item \textbf{DeviceConfigurationScreen} This is a legacy device configuration view, left from older iterations of the code. Currently not used, still left because it might be used for debugging. Device configuration view is currently handled in a separate file \textit{DevConfScreen.kt}
+	\item \textbf{MonitoringStatusScreen} Same as above, \texttt{legacy view for} Device Monitoring \& Status screen, currently not used. This View is currently handled by \textit{DevMonitroingScreen.kt} file.
+	\item \textbf{AppScaffoldWithDrawerPreview} is an assistance function for Prototyping. Android Studio has built-in app preview functionality, this helper function allows seeing how \textit{AppScaffoldWithDrawer} looks without running the entire app on an emulator or device.
+\end{itemize}
+\begin{lstlisting}[
+	style=kotlinstyle,
+	caption={Top-level structure of the \texttt{MainActivity.kt} file},
+	label={lst:MainActivity},
+	language=Kotlin,
+	numbers=left
+	]
+	package com.example.dispenser
+	import . . .
+	
+	class MainActivity : ComponentActivity() {
+		
+		private val applicationScope = CoroutineScope(/* SupervisorJob() + Dispatchers.Default */)
+		private lateinit var bluetoothLeManager: BluetoothLeManager   // Instantiate early
+		
+		// List of permissions
+		private val blePermissions =
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { ... } else {
+			arrayOf(
+			Manifest.permission.BLUETOOTH,
+			Manifest.permission.BLUETOOTH_ADMIN,
+			Manifest.permission.ACCESS_FINE_LOCATION   // or coarse
+			)
+		}
+		
+		// Lifecycle
+		override fun onCreate(savedInstanceState: Bundle?) { ... }
+		private fun checkAllPermissionsGranted(): Boolean
+		private fun isBluetoothAdapterEnabled(): Boolean
+		override fun onDestroy() { ... }
+	}
+	
+	/* ---------- Composables ---------- */
+	
+	@OptIn(ExperimentalMaterial3Api::class)
+	@Composable
+	fun AppScaffoldWithDrawer(
+	modifier: Modifier = Modifier,
+	permissionsGranted: Boolean,
+	isBluetoothEnabled: Boolean,
+	onRequestPermissions: () -> Unit,
+	onRequestEnableBluetooth: () -> Unit,
+	devConnViewModelFactory: DevConnViewModelFactory
+	) { ... }
+	
+	@Composable
+	fun MissingPermissionsScreen(onRequestPermissions: () -> Unit) { ... }
+	
+	@Composable
+	fun BluetoothDisabledScreen(onRequestEnableBluetooth: () -> Unit) { ... }
+	
+	// Place-holder composables for future screens
+	@Composable
+	fun DeviceConfigurationScreen() { ... }
+	
+	@Composable
+	fun MonitoringStatusScreen() { ... }
+	
+	/* ---------- Preview ---------- */
+	@Preview(showBackground = true)
+	@Composable
+	fun AppScaffoldWithDrawerPreview() { ... }
+\end{lstlisting}
+```
+
 \subsubsection{Device Connection}
-
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\linewidth]{Figures/devConnView}
+	\caption[Device connection view.]{Device connection view.}
+	\label{fig:devconnview}
+\end{figure}
+The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
+\begin{enumerate}
+	\item \textbf{DevConnScreen.kt} file contains the Composable function \textit{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen.
+	\item \textbf{DevConnViewModel.kt} file contains State management logic. It acts as a bridge between the UI (\textit{DevConnScreen}) and the data layer (\textit{BluetoothLeManager}). It holds the state displayed by the UI and processes user actions.
+	\item \textbf{BluetoothLeManager.kt} Covered in previous section, is a class responsible for handling \ac{BLE} interactions between Device, Android Bluetooth \ac{API} and \ac{GUI}.
+	\item \textbf{MainActivity.kt} is the main entry point of this app. It sets up the overall UI structure, including the navigation drawer and the content area where all the screens are displayed.
+	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \textit{DevConnViewModel}
+	\item \textbf{GattAttributes.kt} Defines the unique UUIDs for \ac{BLE} service and characteristics on the ESP32. Already covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
+\end{enumerate}
 \subsubsection{Device Configuration}
   a. Add/Configure Dispense Schedule:
   i. Time of dispense (up to 3 a day). Get current timer/Clock
