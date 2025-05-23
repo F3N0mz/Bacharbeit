@@ -5,12 +5,12 @@ Existence of a remote app is one of the main requirements and a hardest one. The
 
 The App is structurally subdivided into multiple parts: 
 \begin{enumerate}
-	\item \textbf{Bluetooth connection interface} (\textit{\textbf{com.example.dispenser.ble}}) package Consists of 2 files: \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. 
+	\item \textbf{Bluetooth connection interface} (\texttt{\textbf{com.example.dispenser.ble}}) package Consists of 2 files: \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. 
 	
 	\textbf{BluetoothLeManager.kt} contains all the functions needed to establish bluetooth communication with the microcontroller using \ac{BLE} protocol, such as environment scan, dispenser identification, reading and writing data using \ac{BLE}.
 	
 	\textbf{GattAttributes.kt} contains all the \ac{UUID}s used by the microcontroller with names assigned to them, to avoid magic numbers in the code and replace them with named constants. This is a common practice everywhere, especially in microcontroller programming (where even a value of 0 is often rather depicted as LOW in the code, to avoid confusion)
-	\item \textbf{User Interface} (\textit{\textbf{com.example.dispenser.screens}}) package consists of 3 files that represent their assigned context windows:
+	\item \textbf{User Interface} (\texttt{\textbf{com.example.dispenser.screens}}) package consists of 3 files that represent their assigned context windows:
 	\begin{itemize}
 		\item \textbf{DevConnScreen.kt} Contains the code for the UI of the "Device Connection" view. It contains the button to scan the environment for all the bluetooth devices, which are listed in the list under the \textbf{Found Devices}. At the very bottom there is also a connection status of the app to the device. When There is also a detection method (based on the device name) to detect the pill dispenser. The app will not attempt to connect to any other device.
 
@@ -18,16 +18,16 @@ The App is structurally subdivided into multiple parts:
 		
 		\item \textbf{DevMonitoringScreen.kt} Contains the code for the UI of the "Monitoring \& Status" view. It contains all the miscellaneous information about the device such as: Connection status, Last dispensed time, time until next dispense. The device logs are also available there. Logs contain information about bluetooth connection, information about past dispense events.
 		
-		\item \textit{\textbf{com.example.dispenser.screens.devconnection}} package contains a class called \textbf{DevConnViewModel.kt} that contains functions related to updating the state of the connection view. It provides live update on information sent and received between the Device and the App, using \textit{\textbf{\mbox{BluetoothLeManager}}}. 
+		\item \texttt{\textbf{com.example.dispenser.screens.devconnection}} package contains a class called \textbf{DevConnViewModel.kt} that contains functions related to updating the state of the connection view. It provides live update on information sent and received between the Device and the App, using \texttt{\textbf{\mbox{BluetoothLeManager}}}. 
 		
-		\item \textit{\textbf{com.example.dispenser.ui.theme}} package defines the application style: colors, fonts, themes etc.
+		\item \texttt{\textbf{com.example.dispenser.ui.theme}} package defines the application style: colors, fonts, themes etc.
 	\end{itemize}
-	\item \textit{\textbf{AndroidManifest.xml}} Declares information about the App: Permissions,  hardware requirements for the device, \textbf{MainActivity.kt} as an executive function (similar to main.c in C).
+	\item \texttt{\textbf{AndroidManifest.xml}} Declares information about the App: Permissions,  hardware requirements for the device, \textbf{MainActivity.kt} as an executive function (similar to main.c in C).
 \end{enumerate}
 
 The next section will cover in specific detail the initial requirements given to the AI to generate the code, as well as the results of the code review and how it actually functions.
 \subsection{Bluetooth Connection Interface}\label{subsec:Bluetooth}
-The requirements for bluetooth connection are on the side of Android App are as follows:
+The requirements for bluetooth connection on the side of Android App are as follows:
 \begin{enumerate}
 	\item Scan for devices, identify the device that is a Pill Dispenser (using Name as an identificator)
 	\item Connect to the device using \ac{BLE}
@@ -48,7 +48,7 @@ The requirements for bluetooth connection are on the side of Android App are as 
 	\item Manually disconnect from device
 \end{enumerate}
 All these initial requirements were implemented in code. \ac{GATT} attributes form an interfacing protocol contract between the mobile application and the microcontroller. This shared definition ensures both systems can correctly interpret the \ac{BLE} services and characteristics. Consequently, these attributes are mirrored in the microcontroller's firmware, as detailed in Section  \hyperref[sec:Backenddev]{Microcontroller Programming}. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Code block \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
-The standard way of defining it is \textit{val NAME\_UUID: UUID = UUID.fromString("UUID")}, where \textbf{val} defines a read-only nature of the value (similar, but not quite the same as \textit{const} keyword in C++), \textbf{UUID} = UUID... is the Java UUID class.
+The standard way of defining it is \texttt{val NAME\_UUID: UUID = UUID.fromString("UUID")}, where \textbf{val} defines a read-only nature of the value (similar, but not quite the same as \texttt{const} keyword in C++), \textbf{UUID} = UUID... is the Java UUID class.
 
 
 
@@ -83,36 +83,36 @@ One interesting property of Kotlin as a programming language can be seen in this
 Moving forward, some properties of the Kotlin language need to be established:
 \begin{enumerate}
 	\item \textbf{Mutability}: References to immutable objects or variables cannot be changed once created. When modification appears to happen, a new object (with different reference) is created with the modification applied to new object only \cite{kotlin_variables} \cite{kotlin_collections}.
-	\item \textbf{Null-safety}: default variable declaration forbids it to have a \textit{null} value i.e. definition strictly follows declaration and memory gets immediately allocated to the variable. \textbf{Nullable} (i.e. those which are able to hold \textit{null} value) can be created by appending a '?' symbol e.g.: \textit{var b: String? = null}. It is  compile-time safety feature aimed at reduction of runtime Null-Pointer exceptions \cite{kotlin_null_safety}.
+	\item \textbf{Null-safety}: default variable declaration forbids it to have a \texttt{null} value i.e. definition strictly follows declaration and memory gets immediately allocated to the variable. \textbf{Nullable} (i.e. those which are able to hold \texttt{null} value) can be created by appending a '?' symbol e.g.: \texttt{var b: String? = null}. It is  compile-time safety feature aimed at reduction of runtime Null-Pointer exceptions \cite{kotlin_null_safety}.
 	\item \textbf{Coroutines and Flows} allow multithreading and simultaneous execution of multiple functions. Coroutines Provide means for writing asynchronous, non-blocking code in a sequential style \cite{kotlin_coroutines}. Flows are asynchronous data streams \cite{kotlin_flow}. 
 	\item \textbf{StateFlow} is a special type of flow that is often used in the code below. It has 3 important Properties: State-Holder (always contains a value), Observable (all state collector functions receive information about state change of this object) and "Hot Flow" (A flow is hot because its active instance exists independently of the presence of collectors. This is opposed to a regular Flow, which is cold and is started separately for each collector)\cite{jetbrains_stateflow}.
-	\item \textbf{Scope Functions (\textit{let, run, with, apply, also})} allow execution of block of code within the context of a given object. Allow referring to an object in different ways and run operations with it as a reference \cite{kotlin_scope_functions}.
+	\item \textbf{Scope Functions (\texttt{let, run, with, apply, also})} allow execution of block of code within the context of a given object. Allow referring to an object in different ways and run operations with it as a reference \cite{kotlin_scope_functions}.
 \end{enumerate}
 
-\textbf{BluetoothLeManager.kt} Contains all the logic of the Android app related to interacting with the device. The code block \ref{lst:BLEman} is the top-level structure of the file. at the highest level there is package definition, library imports, service constant TAG used for logging and main. This file itself is too big (740 lines of code) to do an overview line-by-line and its exact functionality is not the scope of this thesis. In this case, a top level overview of the contents of the file will provide the context for understanding the project as a whole, without digging too deep in technical implementation, specifics of the language and the Platform and their interaction with \ac{BLE} protocol.
+\textbf{BluetoothLeManager.kt} Contains all the logic of the Android app related to interacting with the device. The code block \ref{lst:BLEman} is the top-level structure of the file. At the highest level there is package definition, library imports, service constant TAG used for logging and main. This file itself is too big (740 lines of code) to do an overview line-by-line and its exact functionality is not the scope of this thesis. In this case, a top level overview of the contents of the file will provide the context for understanding the project as a whole, without digging too deep in technical implementation, specifics of the language and the Platform and their interaction with \ac{BLE} protocol.
 
- \textit{BluetoothLeManager} is a class that contains all functions and values for the interface. It relies heavily on built-in Android Package called \textit{android.bluetooth} \cite{android_bluetooth}. 
+ \texttt{BluetoothLeManager} is a class that contains all functions and values for the interface. It relies heavily on built-in Android Package called \texttt{android.bluetooth} \cite{android_bluetooth}. 
 
 The class takes 2 input parameters:
 \begin{enumerate}
-	\item \textit{private val context: Context} to get the \textit{BluetoothManager} (and subsequently the \textit{BluetoothAdapter}) using \textit{context.getSystemService(Context.BLUETOOTH\_SERVICE)} as an entry point to all Bluetooth operations. Consequently, also handles Permissions and \ac{GATT} connections.
-	\item \textit{private val coroutineScope: CoroutineScope} defines the lifecycle and context for any new coroutines launched within it. Since \ac{BLE} operations are asynchronous, this handles it by defining a coroutine on the Android side for each operation.
+	\item \texttt{private val context: Context} to get the \texttt{BluetoothManager} (and subsequently the \texttt{BluetoothAdapter}) using \texttt{context.getSystemService(Context.BLUETOOTH\_SERVICE)} as an entry point to all Bluetooth operations. Consequently, also handles Permissions and \ac{GATT} connections.
+	\item \texttt{private val coroutineScope: CoroutineScope} defines the lifecycle and context for any new coroutines launched within it. Since \ac{BLE} operations are asynchronous, this handles it by defining a coroutine on the Android side for each operation.
 \end{enumerate} 
 Next, within the class, objects meant for the correct function of \ac{BLE} are created:
 \begin{itemize}
-	\item \textbf{\_characteristicUpdate} is a private(visible only inside the class), mutable active flow. It's used internally by \textit{BluetoothLeManager} to emit events when a characteristic's value is updated.
-	\item \textbf{characteristicUpdate} is the public(visible outside the class), read-only version of \textit{\_characteristicUpdate}. External classes can read flow information from this variable to be notified of characteristic value changes. \textbf{Note:} StateFlows are paired like that in the code, in the next instances where public and private instance of the same StateFlow are present, both of them will be described under the same bullet point
-	\item \textbf{discoveredCharacteristics} is a private mutable map that stores the \textit{BluetoothGattCharacteristic} objects discovered on the connected peripheral. Values received from the Device are written within this variable.
-	\item \textbf{bluetoothManager} is an instance of the Android Built-in \textit{BluetoothManager} system service\cite{android_bluetooth}. This is the primary entry point for accessing Bluetooth functionality.
+	\item \textbf{\_characteristicUpdate} is a private(visible only inside the class), mutable active flow. It's used internally by \texttt{BluetoothLeManager} to emit events when a characteristic's value is updated.
+	\item \textbf{characteristicUpdate} is the public(visible outside the class), read-only version of \texttt{\_characteristicUpdate}. External classes can read flow information from this variable to be notified of characteristic value changes. \textbf{Note:} StateFlows are paired like that in the code, in the next instances where public and private instance of the same StateFlow are present, both of them will be described under the same bullet point
+	\item \textbf{discoveredCharacteristics} is a private mutable map that stores the objects called \texttt{BluetoothGattCharacteristic} that are discovered on the connected peripheral. Values received from the Device are written within this variable.
+	\item \textbf{bluetoothManager} is an instance of the Android Built-in \texttt{BluetoothManager} system service\cite{android_bluetooth}. This is the primary entry point for accessing Bluetooth functionality.
 	\item \textbf{bluetoothAdapter} is the local device's Bluetooth adapter(hardware) object, also from built-in Android package \cite{android_bluetooth}. Nullable in case when a device with this App on it doesn't have Bluetooth. With this all standard Bluetooth operations, such as switching on, scanning and  connection can be made.
-	\item \textbf{bleScanner} is An instance of BluetoothLeScanner(a method of built-in Android Bluetooth class) used specifically for scanning for \ac{BLE} devices. \textit{by lazy} is a keyword indicating that this object(\textit{blescanner}) will initialize only when its parent (\textit{bluetoothAdapter?.bluetoothLeScanner})  is initialized.
+	\item \textbf{bleScanner} is an instance of BluetoothLeScanner(a method of built-in Android Bluetooth class) used specifically for scanning for \ac{BLE} devices. \texttt{by lazy} is a keyword indicating that this object(\texttt{blescanner}) will initialize only when its parent (\texttt{bluetoothAdapter?.bluetoothLeScanner})  is initialized.
 	\item \textbf{scanJob} is a nullable(notice the '?' symbol) Coroutine Job used to manage the lifecycle of an ongoing BLE scan operation. Allows asynchronous scan operation to be started, monitored and cancelled.
 	\item \textbf{connectJob} is a nullable Coroutine Job used to manage the lifecycle of an ongoing \ac{BLE} connection attempt. Allows asynchronous \ac{GATT} connection.
-	\item \textbf{\_foundDevices} is private, mutable StateFlow that holds the current list of discovered \ac{BLE} devices. it gets internally updated by the \textit{leScanCallback} as new devices are found during a scan. While the public version of it Exposes the list of discovered devices to the \textit{DevConnViewModel}, which allows the UI to display found devices.
-	\item \textbf{\_isScanning} is a private, mutable StateFlow indicating whether a scan is currently active. Used internally to track the scanning state and prevent multiple concurrent scans. Public version of it Allows the UI to observe the current scanning status.
+	\item \textbf{\_foundDevices} is private, mutable StateFlow that holds the current list of discovered \ac{BLE} devices. it gets internally updated by the \texttt{leScanCallback} as new devices are found during a scan. While the public version of it Exposes the list of discovered devices to the \texttt{DevConnViewModel}, which allows the UI to display found devices.
+	\item \textbf{\_isScanning} is a private, mutable StateFlow indicating whether a scan is currently active. Used internally to track the scanning state and prevent multiple concurrent scans. Public version of it allows the UI to observe the current scanning status.
 	\item \textbf{\_connectionStatus} is a private, mutable StateFlow which holds the current connection status (e.g., Disconnected, Connecting, Connected, Error). Used internally to reflect the real-time state of the \ac{BLE} link. Public version of it allows UI to display the current connection status and to make decisions based on this state (e.g., enabling/disabling certain actions).
 	\item \textbf{\_connectedDevice} A private, mutable StateFlow, it holds information not only about whether a device is connected, but also about the currently connected device. Public version of it Allows the UI to know which device is currently connected.
-	\item \textbf{currentGatt} is a nullable instance of built-in android BluetoothGatt class from the android.bluetooth package\cite{android_bluetooth} that provides \ac{GATT} client functionality. When a device is not connected, this class can be \textit{null}. It is a main object of all interactions with connected device.
+	\item \textbf{currentGatt} is a nullable instance of built-in android BluetoothGatt class from the android.bluetooth package\cite{android_bluetooth} that provides \ac{GATT} client functionality. When a device is not connected, this class can be \texttt{null}. It is a main object of all interactions with connected device.
 \end{itemize}
 The next 3 functions are made for permission checks:
 \begin{itemize}
@@ -122,33 +122,33 @@ The next 3 functions are made for permission checks:
 \end{itemize}
 The following two functions and one object handle the scanning function of the App:
 \begin{itemize}
-	\item \textbf{startScan} is a function that initiates a scan to discover all advertising devices in the reach. It performs permission checks,  Checks if Bluetooth is enabled, Sets \textit{\_isScanning} to true and clears \textit{\_foundDevices}, Starts the scan, Launches a \textit{scanJob} to manage the scan, including a timeout (30 seconds) after which the scan is automatically stopped and finally, Updates \textit{\_connectionStatus} with an error if prerequisites are not met.
-	\item \textbf{stopScan} is a function that Stops an ongoing BLE scan. It Checks if a scan is actually in progress, Calls \textit{bleScanner?.stopScan} using the \textit{leScanCallback}, Sets \textit{\_isScanning} to \textbf{FALSE}, Cancels the \textit{scanJob} and finally, if there is an error during the stopping process, Handles potential Exceptions during the stop operation. 
-	\item \textbf{leScanCallback} is an instance of \textit{ScanCallback} class provided by the bluetooth.le package (it is different package that is made specifically for \ac{BLE} connection) \cite{android_bluetooth_le}. Its methods are invoked by the system when scan events occur. Using this class, device filtering is handled. If scan detects a device called "PillDispenserESP32" it will be marked with the \textit{isPillDispenser} flag, outlining it and putting it at the top of the list of scanned devices.
+	\item \textbf{startScan} is a function that initiates a scan to discover all advertising devices in the reach. It performs permission checks,  Checks if Bluetooth is enabled, Sets \texttt{\_isScanning} to true and clears \texttt{\_foundDevices}, Starts the scan, Launches a \texttt{scanJob} to manage the scan, including a timeout (30 seconds) after which the scan is automatically stopped and finally, Updates \texttt{\_connectionStatus} with an error if prerequisites are not met.
+	\item \textbf{stopScan} is a function that Stops an ongoing BLE scan. It Checks if a scan is actually in progress, Calls \texttt{bleScanner?.stopScan} using the \texttt{leScanCallback}, Sets \texttt{\_isScanning} to \textbf{FALSE}, Cancels the \texttt{scanJob} and finally, if there is an error during the stopping process, Handles potential Exceptions during the stop operation. 
+	\item \textbf{leScanCallback} is an instance of \texttt{ScanCallback} class provided by the bluetooth.le package (it is different package that is made specifically for \ac{BLE} connection) \cite{android_bluetooth_le}. Its methods are invoked by the system when scan events occur. Using this class, device filtering is handled. If scan detects a device called "PillDispenserESP32" it will be marked with the \texttt{isPillDispenser} flag, outlining it and putting it at the top of the list of scanned devices.
 \end{itemize}
 The next functions handle the connection logic:
 \begin{itemize}
-	\item \textbf{connectToDevice} is a function that Initiates a \ac{GATT} connection to a \ac{BLE} peripheral specified by its \ac{MAC} address. First, it performs permission and bluetooth availability checks, then retrieves the \textit{BluetoothDevice} object using the provided address, then launches a \textit{connectJob} to handle the asynchronous connection process and finally, calls \textit{deviceToConnect.connectGatt()} with the \textit{gattCallback} to establish the connection.
-	\item \textbf{disconnect} is a function that disconnects from the currently connected \ac{BLE} peripheral and closes the \ac{GATT} client. First, it checks if \textit{currentGatt} is not null i.e. it is connected, then it performs permission checks, afterwards it calls \textit{currentGatt?.disconnect()}, however the actual disconnection and resource cleanup (closing \ac{GATT}) are typically handled in the \textit{onConnectionStateChange} callback and finally it  Cancels the \textit{connectJob} if it was related to an ongoing connection attempt.
-	\item \textbf{writeCharacteristic} function is used to write into the writable characteristics on the device. First, it checks for connect permissions and if \textit{currentGatt} is valid. Then, retrieves the \textit{BluetoothGattCharacteristic} from \textit{discoveredCharacteristics}, so that it will know what writable characteristics are on the device. Then, it verifies that the characteristic supports the specified writeType (verifies that it is writable), calls \textit{currentGatt?.writeCharacteristic()} and finally, if the write operation has successfully been initiated, it returns \textbf{TRUE}.
-	\item \textbf{readCharacteristic} is in nature very similar to \textit{writeCharacteristic}, but for read-only characteristics on the device. First, it checks for connect permissions and retrieves \textit{BluetoothGattCharacteristic} (same as previous function), then verifies the read-only property of the characteristic,  Calls \textit{currentGatt?.readCharacteristic()} and finally, returns \textbf{TRUE} if read operation was initiated successfully.
+	\item \textbf{connectToDevice} is a function that Initiates a \ac{GATT} connection to a \ac{BLE} peripheral specified by its \ac{MAC} address. First, it performs permission and bluetooth availability checks, then retrieves the \texttt{BluetoothDevice} object using the provided address, then launches a \texttt{connectJob} to handle the asynchronous connection process and finally, calls \texttt{deviceToConnect.connectGatt()} with the \texttt{gattCallback} to establish the connection.
+	\item \textbf{disconnect} is a function that disconnects from the currently connected \ac{BLE} peripheral and closes the \ac{GATT} client. First, it checks if \texttt{currentGatt} is not null i.e. it is connected, then it performs permission checks, afterwards it calls the command \texttt{currentGatt?.disconnect()}, however the actual disconnection and resource cleanup (closing \ac{GATT}) are typically handled in the \texttt{onConnectionStateChange} callback and finally it  Cancels the \texttt{connectJob} if it was related to an ongoing connection attempt.
+	\item \textbf{writeCharacteristic} function is used to write into the writable characteristics on the device. First, it checks for connect permissions and if \texttt{currentGatt} is valid. Then, retrieves the \texttt{BluetoothGattCharacteristic} from \texttt{discoveredCharacteristics}, so that it will know what writable characteristics are on the device. Then, it verifies that the characteristic supports the specified writeType (verifies that it is writable), calls \texttt{currentGatt?.writeCharacteristic()} and finally, if the write operation has successfully been initiated, it returns \textbf{TRUE}.
+	\item \textbf{readCharacteristic} is in nature very similar to \texttt{writeCharacteristic}, but for read-only characteristics on the device. First, it checks for connect permissions and retrieves \texttt{BluetoothGattCharacteristic} (same as previous function), then verifies the read-only property of the characteristic,  Calls \texttt{currentGatt?.readCharacteristic()} and finally, returns \textbf{TRUE} if read operation was initiated successfully.
 	\item \textbf{setCharacteristicNotificationEnabled} is a function that enables or disables notifications (or indications) for a given characteristic. Currently implemented, but not used, might be used for debugging and fine-tuning notifications.
-	\item \textbf{enableNotificationsFor} is a private helper function specifically called during the \textit{onServicesDiscovered} phase. This is a function that is more simple and robust than the one above. It centralizes the logic for enabling notifications for all relevant "GET\_..." characteristics as soon as they are discovered, simplifying the connection setup process
+	\item \textbf{enableNotificationsFor} is a private helper function specifically called during the \texttt{onServicesDiscovered} phase. This is a function that is more simple and robust than the one above. It centralizes the logic for enabling notifications for all relevant "GET\_..." characteristics as soon as they are discovered, simplifying the connection setup process
 \end{itemize}
 The next object is a key component for the functionality of the whole \ac{BLE} communication logic. 
 
-\textbf{gattCallback} is an instance of built-in Android class called \textit{BluetoothGattCallback}\cite{android_bluetooth} provided to the \textit{connectGatt} method. This is the heart of managing an active \ac{BLE} connection and its asynchronous events. To accomplish this task, the class has methods built in it:
+\textbf{gattCallback} is an instance of built-in Android class called \texttt{BluetoothGattCallback}\cite{android_bluetooth} provided to the \texttt{connectGatt} method. This is the heart of managing an active \ac{BLE} connection and its asynchronous events. To accomplish this task, the class has methods built in it:
 \begin{itemize}
-	\item \textbf{onConnectionStateChange} is called when the connection state changes. If connected successfully, it triggers service discovery(\textit{gatt?.discoverServices()}), on disconnection, it closes the \ac{GATT} client.
-	\item \textbf{onServicesDiscovered} is called after \textit{discoverServices()} completes. If successful, it iterates through the services and characteristics of the connected device. It populates the \textit{discoveredCharacteristics} list with relevant characteristics defined in \textit{GattAttributes} (SET/GET/TRIGGER UUIDs). It also calls \textit{enableNotificationsFor()} function for readable characteristics to automatically subscribe to updates. If the required service or critical characteristics are not found, it updates \textit{\_connectionStatus} to an error and disconnects.
+	\item \textbf{onConnectionStateChange} is called when the connection state changes. If connected successfully, it triggers service discovery(\texttt{gatt?.discoverServices()}), on disconnection, it closes the \ac{GATT} client.
+	\item \textbf{onServicesDiscovered} is called after \texttt{discoverServices()} completes. If successful, it iterates through the services and characteristics of the connected device. It populates the \texttt{discoveredCharacteristics} list with relevant characteristics defined in \texttt{GattAttributes} (SET/GET/TRIGGER UUIDs). It also calls \texttt{enableNotificationsFor()} function for readable characteristics to automatically subscribe to updates. If the required service or critical characteristics are not found, it updates \texttt{\_connectionStatus} to an error and disconnects.
 	\item \textbf{onCharacteristicRead} is called when a characteristic read operation completes. 
-	\item \textbf{handleCharacteristicRead} If the read was successful (GATT\_SUCCESS), it emits the characteristic's \ac{UUID} and value to the \textit{\_characteristicUpdate} flow.
-	\item \textbf{onCharacteristicWrite} Called after a characteristic write operation completes. Logs the success or failure. If failed, updates \textit{\_connectionStatus} with an error.
+	\item \textbf{handleCharacteristicRead} If the read was successful (GATT\_SUCCESS), it emits the characteristic's \ac{UUID} and value to the \texttt{\_characteristicUpdate} flow.
+	\item \textbf{onCharacteristicWrite} Called after a characteristic write operation completes. Logs the success or failure. If failed, updates \texttt{\_connectionStatus} with an error.
 	\item \textbf{onCharacteristicChanged} is called when the peripheral sends a notification or indication for a characteristic to which the client has subscribed. 
-	\item \textbf{handleCharacteristicChanged} is a method that emits the characteristic's \ac{UUID} and updated value to the \textit{\_characteristicUpdate} flow.
+	\item \textbf{handleCharacteristicChanged} is a method that emits the characteristic's \ac{UUID} and updated value to the \texttt{\_characteristicUpdate} flow.
 	\item \textbf{onDescriptorWrite} is called after a descriptor write operation completes (e.g. to enable/disable notifications). It logs the outcome.
 \end{itemize}
-The final function of the class is \textbf{cleanup} function. It releases all resources used by the \textit{BluetoothLeManager}. this function is called when the model is no longer needed. it resets all states related to Bluetooth to their default state (disconnected, not scanning).
+The final function of the class is \textbf{cleanup} function. It releases all resources used by the \texttt{BluetoothLeManager}. this function is called when the model is no longer needed. it resets all states related to Bluetooth to their default state (disconnected, not scanning).
 \begin{lstlisting}[
 	style=kotlinstyle,
 	caption={Top level structure of the BluetoothLeManager.kt file},
@@ -229,30 +229,43 @@ Once again, before moving forward, there is a certain terminology that needs to 
 	\item \textbf{ViewModelFactory} is a class responsible for creating instances of ViewModels. It's needed because ViewModels often have dependencies that need to be provided to them when they are created.
 	\item \textbf{UI State} represents what to show on the screen. For the Device Connection screen, this includes whether the app is currently scanning, the list of found Bluetooth devices, the current connection status (e.g., "Disconnected", "Connecting", "Connected"), and any error messages. This state typically lives in or is managed by the ViewModel.
 	\item \textbf{Composable Function (or "Composable")} This is the fundamental building block of \ac{UI} in Jetpack Compose. Instead of traditional XML layouts, \ac{UI} is defined by writing functions annotated with @Composable. These functions describe what the \ac{UI} should look like for a given state, not how to construct it step-by-step.
-	\item \textbf{Recomposition} is the process of Jetpack Compose re-running Composable functions when their input \textbf{State} changes. If the \textit{scanStatus} (part of the \ac{UI} State) changes from "Disconnected" to "Scanning", Compose will re-run (recompose) only the parts of \ac{UI} that depend on \textit{scanStatus}, updating them automatically. \ac{UI} elements don't need to be manually updated.
+	\item \textbf{Recomposition} is the process of Jetpack Compose re-running Composable functions when their input \textbf{State} changes. If the \texttt{scanStatus} (part of the \ac{UI} State) changes from "Disconnected" to "Scanning", Compose will re-run (recompose) only the parts of \ac{UI} that depend on \texttt{scanStatus}, updating them automatically. \ac{UI} elements don't need to be manually updated.
 	\item \textbf{Layout Composables (Column, Row, Box)} are special Composables used to arrange other Composables on the screen. Column arranges its children vertically, Row horizontally, and Box allows stacking elements or positioning them relative to its edges.
 	\item \textbf{Event Handling (Callbacks/Lambdas)} is based on user interaction with \ac{UI}. Composables can trigger actions. This is usually done by passing lambda functions (callbacks) as parameters to the Composables.
 	\item \textbf{StateFlow} has already been defined in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section. It is a state-holder observable "hot" flow that always has a value and emits updates to its collectors. This term is even more important here, as it creates a bridge for understanding how User Interface interacts with data. In context of User Interface, it is is a primary mechanism for the \textbf{ViewModel} to expose \ac{UI} \textbf{State} to the Composable. Composable functions can observe (or "collect") these StateFlows, When the StateFlow emits a new value, collectAsState() receives this update and signals to the Compose runtime that the state read by a Composable has changed.
 \end{itemize}
 The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
 
-Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \textit{MainActivity} class's \textit{onCreate} method to set up the UI.
-\textit{AppScaffoldWithDrawer} has numerous tasks:
+Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \texttt{MainActivity} class's \texttt{onCreate} method to set up the UI.
+\texttt{AppScaffoldWithDrawer} has numerous tasks:
 \begin{enumerate}
 	\item \textbf{Navigation:} Manages the ModalNavigationDrawer to allows switching between different sections of the app ("Device Connection", "Device Configuration", "Monitoring \& Status").
-	\item \textbf{Screen Switching:} Uses a \textit{when} (similar to \textit{case} and \textit{switch} commands in C/C++) statement to display the appropriate screen in the Scaffold's content area.
-	\item \textbf{ViewModel Access:} It receives the \textit{devConnViewModelFactory} and uses it to obtain an instance of \textit{DevConnViewModel}. This \textit{ViewModel} is then passed down to the relevant screens.
+	\item \textbf{Screen Switching:} Uses a \texttt{when} (similar to \texttt{case} and \texttt{switch} commands in C/C++) statement to display the appropriate screen in the Scaffold's content area.
+	\item \textbf{ViewModel Access:} It receives the \texttt{devConnViewModelFactory} and uses it to obtain an instance of \texttt{DevConnViewModel}. This \texttt{ViewModel} is then passed down to the relevant screens.
 	\item \textbf{Conditional UI:} It conditionally renders content within the "Device Connection" screen path(e.g. Popups that prompt granting permissions and enabling Bluetooth).
-	\item \textbf{Callbacks:} Passes down callbacks to \textit{MissingPermissionsScreen} and \textit{BluetoothDisabledScreen}.
+	\item \textbf{Callbacks:} Passes down callbacks to \texttt{MissingPermissionsScreen} and \\ \texttt{BluetoothDisabledScreen}.
 \end{enumerate}
-Besides \textit{AppScaffoldWithDrawer} function, there are also various supplementary functions:
-
+Besides \texttt{AppScaffoldWithDrawer} function, there are also various supplementary functions:
 \begin{itemize}
-	\item \textbf{MissingPermissionsScreen} is a simple UI screen displayed when the necessary Bluetooth permissions have not been granted by the user.It provides a "Grant Permissions" button that triggers the \textit{onRequestPermissions} callback (which is implemented in \textit{MainActivity}) to launch the permission request.
-	\item \textbf{BluetoothDisabledScreen} is similar to \textit{MissingPermissionsScreen}, but for when Bluetooth is disabled. Also provides an "Enable Bluetooth" button to switch it on.
-	\item \textbf{DeviceConfigurationScreen} This is a legacy device configuration view, left from older iterations of the code. Currently not used, still left because it might be used for debugging. Device configuration view is currently handled in a separate file \textit{DevConfScreen.kt}
-	\item \textbf{MonitoringStatusScreen} Same as above, \texttt{legacy view for} Device Monitoring \& Status screen, currently not used. This View is currently handled by \textit{DevMonitroingScreen.kt} file.
-	\item \textbf{AppScaffoldWithDrawerPreview} is an assistance function for Prototyping. Android Studio has built-in app preview functionality, this helper function allows seeing how \textit{AppScaffoldWithDrawer} looks without running the entire app on an emulator or device.
+	\item \textbf{MissingPermissionsScreen} is a simple UI screen displayed when the necessary Bluetooth permissions have not been granted by the user.It provides a "Grant Permissions" button that triggers the \texttt{onRequestPermissions} callback (which is implemented in \texttt{MainActivity}) to launch the permission request.
+	\item \textbf{BluetoothDisabledScreen} is similar to \texttt{MissingPermissionsScreen}, but for when Bluetooth is disabled. Also provides an "Enable Bluetooth" button to switch it on.
+	\item \textbf{DeviceConfigurationScreen} This is a legacy device configuration view, left from older iterations of the code. Currently not used, still left because it might be used for debugging. Device configuration view is currently handled in a separate file \texttt{DevConfScreen.kt}
+	\item \textbf{MonitoringStatusScreen} Same as above, legacy view for Device Monitoring \& Status screen, currently not used. This View is currently handled by \texttt{DevMonitroingScreen.kt} file.
+	\item \textbf{AppScaffoldWithDrawerPreview} is an assistance function for Prototyping. Android Studio has built-in app preview functionality, this helper function allows seeing how \texttt{AppScaffoldWithDrawer} looks without running the entire app on an emulator or device.
+\end{itemize}
+Next, \texttt{MainActivity} class ought to be reviewed next. It is a primary \texttt{Activity} of the application, handles lifecycle, Compose \ac{UI} and manages permissions and Bluetooth initialization.
+It has 3 parameters:
+\begin{itemize}
+	\item \textbf{private val applicationScope} is a \texttt{CoroutineScope} that lives as long as \texttt{MainActivity} is explicitly active. It consists of 2 components: \texttt{SupervisorJob} ensures that if one child coroutine fails, others are not cancelled. \texttt{Dispatchers.Default} is used for CPU-intensive work off the main thread.
+	\item \textbf{private lateinit var bluetoothLeManager} holds the instance of \texttt{BluetoothLeManager}, the class that was extensively covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
+	\item \textbf{private val blePermissions} is used to define an array of Bluetooth-related permissions required by the app, adapting to different Android versions (API 31/Android S and above have different permission requirements). Necessary for compatibility with older devices that have a different set of permissions.
+\end{itemize}
+Then, it has 4 different methods, each serving different purpose:
+\begin{itemize}
+	\item \textbf{onCreate} is a Lifecycle method, which is called when activity is starting. It fulfills many important tasks: Initializes the \texttt{BluetoothLeManager}. Using \texttt{setContent \{ ... \}} it creates entry point for Jetpack Compose, which defines the UI content. Besides that, it also sets the stage for the function of the app as a whole: it establishes \textbf{Permission Handling, Bluetooth Enabled Checking, Initial Permission/Bluetooth Requests, ViewModel Factory Creation} and finally \textbf{Main UI Setup}. 
+	\item \textbf{checkAllPermissionsGranted} is a private helper method  that serves as a checklist to go through and check if all permissions (defined in \texttt{blePermissions}) have been granted. It initializes \texttt{hasPermissions} on creation from method above and can be called again to re-check permissions.
+	\item \textbf{isBluetoothAdapterEnabled} is a private helper method that checks if Bluetooth adapter is currently enabled. It initializes \texttt{isBluetoothEnabled} in \texttt{OnCreate} and by \texttt{enableBluetoothLauncher} to check if Bluetooth is enabled.
+	\item \textbf{onDestroy} is a lifecycle method for termination of the task that is used to release resources. It works together with the \texttt{bluetoothLeManager.cleanup()} method from the BluetoothLeManager class to clean up  the resources.
 \end{itemize}
 \begin{lstlisting}[
 	style=kotlinstyle,
@@ -317,7 +330,6 @@ Besides \textit{AppScaffoldWithDrawer} function, there are also various suppleme
 	@Composable
 	fun AppScaffoldWithDrawerPreview() { ... }
 \end{lstlisting}
-```
 
 \subsubsection{Device Connection}
 \begin{figure}[h!]
@@ -328,13 +340,36 @@ Besides \textit{AppScaffoldWithDrawer} function, there are also various suppleme
 \end{figure}
 The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
 \begin{enumerate}
-	\item \textbf{DevConnScreen.kt} file contains the Composable function \textit{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen.
-	\item \textbf{DevConnViewModel.kt} file contains State management logic. It acts as a bridge between the UI (\textit{DevConnScreen}) and the data layer (\textit{BluetoothLeManager}). It holds the state displayed by the UI and processes user actions.
+	\item \textbf{DevConnScreen.kt} file contains the Composable function \texttt{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen.
+	\item \textbf{DevConnViewModel.kt} file contains State management logic. It acts as a bridge between the UI (\texttt{DevConnScreen}) and the data layer (\texttt{BluetoothLeManager}). It holds the state displayed by the UI and processes user actions.
 	\item \textbf{BluetoothLeManager.kt} Covered in previous section, is a class responsible for handling \ac{BLE} interactions between Device, Android Bluetooth \ac{API} and \ac{GUI}.
 	\item \textbf{MainActivity.kt} is the main entry point of this app. It sets up the overall UI structure, including the navigation drawer and the content area where all the screens are displayed.
-	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \textit{DevConnViewModel}
+	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \texttt{DevConnViewModel}
 	\item \textbf{GattAttributes.kt} Defines the unique UUIDs for \ac{BLE} service and characteristics on the ESP32. Already covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
 \end{enumerate}
+Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that we will cover next, to understand how the view is created.
+\newpage
+\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. It contains:
+\begin{itemize}
+	\item \textbf{UiBluetoothDevice} data class serves as a simplified representation of a Bluetooth device, made to be displayed in the \ac{UI}. It's more convenient to use this in Composable functions than the raw Android \texttt{BluetoothDevice} object directly. Instances of this class are used to populate the list of found devices displayed on the screen(\ac{MAC} address, Device name and whether it is a Pill Dispenser).
+	\item \textbf{ConnectionStatus} class defines a set of distinct states representing the current status of the Bluetooth scanning and connection process. It is a \textbf{sealed} class, which means that all direct subclasses of a sealed class must be declared in the same file as the sealed class itself. Here it is used for a state-switch (using an already known command \texttt{when}). It has 4 state objects: \texttt{Disconnected, Scanning, Connecting, Connected}, each representing current relationship of an App to the device.
+	\item \textbf{DevConnScreen} is a primary composable function that defines the entire layout and behavior of the \textbf{Device Connection} screen. It is quite vast function in a sense that through it the whole view is displayed, therefore it is worth documenting it deeper. \texttt{DevConnScreen} takes many input parameters:
+	\begin{itemize}
+		\item \textbf{scanStatus} is the current status of the scanning process
+		\item \textbf{foundDevices} is list of discovered Bluetooth devices.
+		\item \textbf{connectionStatus} is current status of the device connection.
+		\item \textbf{connectingDevice} is the device that is currently being connected to, or is already connected.
+		\item \textbf{lastError} general error message that might not be part of either  \texttt{scanStatus} or \texttt{connectionStatus}
+		\item \textbf{onStartScanClick} is a callback function invoked when the "Start Scan" button is clicked.
+		\item \textbf{onStopScanClick} is a callback function invoked when the "Stop Scan" button is clicked.
+		\item \textbf{onDeviceClick} is a callback function invoked when a device in the list is clicked.
+		\item \textbf{onDisconnectClick}is a callback function invoked when the "Disconnect" button is clicked.
+	\end{itemize}
+	In essence, this function is responsible for every element of the \ac{UI} seen within the "Device Connection Screen" window.
+	\item \textbf{DeviceListItem} is a helper Composable function responsible for rendering a single item in the list of found Bluetooth devices. In essence, this function is responsible for the contents of a single card from the list of scanned devices. It is called each time a new device is found to draw a card with information about this device within it.
+	\item \textbf{DevConnScreenPreview\_*} are multiple functions with similar names, each of them serves the debugging purpose, allowing previewing of different states of this window within Android Studio.
+\end{itemize}
+
 \subsubsection{Device Configuration}
   a. Add/Configure Dispense Schedule:
   i. Time of dispense (up to 3 a day). Get current timer/Clock
