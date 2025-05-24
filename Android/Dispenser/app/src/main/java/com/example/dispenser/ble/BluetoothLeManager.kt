@@ -29,6 +29,8 @@ import java.util.UUID
 private const val TAG = "BluetoothLeManager"
 
 class BluetoothLeManager(private val context: Context, private val coroutineScope: CoroutineScope) {
+    private val notificationQueue: ArrayDeque<BluetoothGattCharacteristic> = ArrayDeque()
+    private var isProcessingNotificationQueue = false
 
     private val _characteristicUpdate = MutableSharedFlow<Pair<UUID, ByteArray>>()
     val characteristicUpdate: SharedFlow<Pair<UUID, ByteArray>> = _characteristicUpdate.asSharedFlow()
@@ -455,61 +457,69 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
 
     // --- Private helper for BluetoothLeManager to enable notifications during service discovery ---
     @SuppressLint("MissingPermission")
-    private fun enableNotificationsFor(characteristic: BluetoothGattCharacteristic) {
-        // This method is called from onServicesDiscovered. Permissions and gatt connection are implicitly checked by call site.
-        val gatt = currentGatt ?: return // Should not happen if called from onServicesDiscovered correctly
+    private fun enableNotificationsFor(characteristic: BluetoothGattCharacteristic): Boolean {
+        val gatt = currentGatt ?: run {
+            Log.w(TAG, "Cannot enable notifications: GATT not connected.")
+            return false
+        }
         val cccdUuid = GattAttributes.CLIENT_CHARACTERISTIC_CONFIG_UUID
 
         val supportsNotify = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0
         val supportsIndicate = (characteristic.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0
 
         if (!supportsNotify && !supportsIndicate) {
-            // Log.d(TAG, "Characteristic ${characteristic.uuid} does not support notifications/indications.")
-            return
+            Log.d(TAG, "Characteristic ${characteristic.uuid} does not support notifications/indications.")
+            return false // Indicate failure to proceed with this characteristic
         }
 
-        // 1. Enable notification locally
         if (!gatt.setCharacteristicNotification(characteristic, true)) {
-            Log.e(TAG, "Failed to set characteristic notification locally for ${characteristic.uuid} during auto-enable.")
-            return
+            Log.e(TAG, "Failed to set characteristic notification locally for ${characteristic.uuid}.")
+            return false // Indicate failure
         }
-        Log.d(TAG, "Local characteristic notification set for ${characteristic.uuid} during auto-enable.")
+        Log.d(TAG, "Local characteristic notification set for ${characteristic.uuid}.")
 
-        // 2. Write to the CCCD descriptor to enable on peripheral
         characteristic.getDescriptor(cccdUuid)?.let { descriptor ->
-            Log.d(TAG, "Found CCCD ${descriptor.uuid} for characteristic ${characteristic.uuid} during auto-enable.")
+            Log.d(TAG, "Found CCCD ${descriptor.uuid} for characteristic ${characteristic.uuid}.")
             val valueToSet = if (supportsNotify) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else { // Must be supportsIndicate
                 BluetoothGattDescriptor.ENABLE_INDICATION_VALUE
             }
 
-            val writeSuccess: Boolean = try {
+            val writeInitiated: Boolean = try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val status = gatt.writeDescriptor(descriptor, valueToSet)
-                    Log.d(TAG, "writeDescriptor (API 33+) for ${characteristic.uuid} (auto-enable) status: $status")
-                    status == BluetoothStatusCodes.SUCCESS
+                    Log.d(TAG, "writeDescriptor (API 33+) for ${characteristic.uuid} (auto-enable) initiated. System Status: $status")
+                    // Note: For API 33+, status indicates success of the call to the system, not necessarily the operation on peripheral yet.
+                    // However, BluetoothStatusCodes.SUCCESS is a good check here.
+                    // A non-SUCCESS status here means the system didn't even accept the write.
+                    status == BluetoothStatusCodes.SUCCESS || status == BluetoothStatusCodes.ERROR_GATT_WRITE_REQUEST_BUSY // Allow busy if that's a status
                 } else {
                     descriptor.value = valueToSet
                     val success = gatt.writeDescriptor(descriptor)
-                    Log.d(TAG, "writeDescriptor (legacy) for ${characteristic.uuid} (auto-enable) success: $success")
+                    Log.d(TAG, "writeDescriptor (legacy) for ${characteristic.uuid} (auto-enable) initiated. Success: $success")
                     success
                 }
             } catch (e: SecurityException) {
-                Log.e(TAG, "SecurityException writing CCCD for ${characteristic.uuid} (auto-enable): ${e.message}", e)
+                Log.e(TAG, "SecurityException writing CCCD for ${characteristic.uuid}: ${e.message}", e)
+                gatt.setCharacteristicNotification(characteristic, false) // Revert local
                 false
             }
 
-            if (writeSuccess) {
-                Log.i(TAG, "Successfully initiated enable notifications/indications for ${characteristic.uuid} (auto-enable)")
-            } else {
-                Log.e(TAG, "Failed to initiate write CCCD for ${characteristic.uuid} (auto-enable)")
-                // Optionally, revert local notification setting:
-                // gatt.setCharacteristicNotification(characteristic, false)
+            if (!writeInitiated) {
+                Log.e(TAG, "Failed to initiate write CCCD for ${characteristic.uuid}. Reverting local notification.")
+                gatt.setCharacteristicNotification(characteristic, false) // Revert local setting
             }
-        } ?: Log.w(TAG, "CCCD not found for ${characteristic.uuid} (auto-enable), notifications might not work fully on peripheral.")
+            return writeInitiated
+        } ?: run {
+            Log.w(TAG, "CCCD not found for ${characteristic.uuid}. Notifications might not work fully on peripheral.")
+            // If local set succeeded but no descriptor, decide if this is "success" for queue processing
+            // For now, let's say true, as local is set. Or false if strict CCCD write is required.
+            // Let's stick to false if CCCD is expected but not found for enabling remote notifications.
+            gatt.setCharacteristicNotification(characteristic, false) // Revert local if CCCD needed but missing
+            return false
+        }
     }
-
 
     // --- GATT Callback Object ---
     private val gattCallback = object : BluetoothGattCallback() {
@@ -545,6 +555,8 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
                             gatt?.close()
                             currentGatt = null
                         }
+                        discoveredCharacteristics.clear()
+                        notificationQueue.clear()
                     }
                     BluetoothProfile.STATE_DISCONNECTED -> {
                         Log.i(TAG, "Disconnected from GATT server ($deviceAddress). Status: $status")
@@ -577,71 +589,108 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
         override fun onServicesDiscovered(gatt: BluetoothGatt?, status: Int) {
             val deviceAddress = gatt?.device?.address ?: "Unknown Address"
             Log.d(TAG, "onServicesDiscovered for $deviceAddress, Status: $status")
-            coroutineScope.launch {
-                if (status == BluetoothGatt.GATT_SUCCESS) {
-                    Log.i(TAG, "Services discovered successfully for $deviceAddress.")
-                    discoveredCharacteristics.clear()
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "Services discovered successfully for $deviceAddress.")
+                discoveredCharacteristics.clear()
+                notificationQueue.clear() // Clear queue before populating
 
-                    val service = gatt?.getService(GattAttributes.SERVICE_UUID)
-                    if (service != null) {
-                        Log.d(TAG, "Found target service: ${service.uuid}")
+                val service = gatt?.getService(GattAttributes.SERVICE_UUID)
+                if (service != null) {
+                    Log.d(TAG, "Found target service: ${service.uuid}")
 
-                        // Populate Writable Characteristics
-                        listOf(
-                            GattAttributes.CHAR_SET_DEVICE_TIME_UUID,
-                            GattAttributes.CHAR_SET_DISPENSE_SCHEDULE_UUID,
-                            GattAttributes.CHAR_TRIGGER_MANUAL_DISPENSE_UUID
-                        ).forEach { uuid ->
-                            service.getCharacteristic(uuid)?.also {
-                                discoveredCharacteristics[uuid] = it
-                                Log.d(TAG, "Discovered Writable Char: ${it.uuid} Properties: ${it.properties}")
-                            } ?: Log.w(TAG, "Writable Char $uuid not found in service ${service.uuid}")
-                        }
-
-                        // Populate Readable/Notifiable Characteristics and Enable Notifications
-                        listOf(
-                            GattAttributes.CHAR_GET_DEVICE_TIME_UUID,
-                            GattAttributes.CHAR_GET_DISPENSE_SCHEDULE_UUID,
-                            GattAttributes.CHAR_GET_LAST_DISPENSE_INFO_UUID,
-                            GattAttributes.CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID,
-                            GattAttributes.CHAR_GET_DISPENSE_LOG_UUID
-                        ).forEach { uuid ->
-                            service.getCharacteristic(uuid)?.also { char ->
-                                discoveredCharacteristics[uuid] = char
-                                Log.d(TAG, "Discovered Readable/Notifiable Char: ${char.uuid} Properties: ${char.properties}")
-                                // Call BluetoothLeManager's method to enable notifications
-                                this@BluetoothLeManager.enableNotificationsFor(char)
-                            } ?: Log.w(TAG, "Readable/Notifiable Char $uuid not found in service ${service.uuid}")
-                        }
-
-                        if (discoveredCharacteristics.any { it.key in listOf(
-                                // Check if at least one critical characteristic is found. Adjust as needed.
-                                GattAttributes.CHAR_TRIGGER_MANUAL_DISPENSE_UUID,
-                                GattAttributes.CHAR_GET_LAST_DISPENSE_INFO_UUID
-                            )}) {
-                            Log.i(TAG, "Relevant characteristics found. Connection established to $deviceAddress.")
-                            _connectionStatus.value = ConnectionStatus.Connected
-                            // _connectedDevice was set tentatively in onConnectionStateChange, confirm it.
-                            _connectedDevice.value = UiBluetoothDevice(
-                                gatt.device.address,
-                                try { gatt.device.name } catch (e: SecurityException) { null }
-                            )
-                        } else {
-                            Log.e(TAG, "No relevant/expected characteristics found for service ${GattAttributes.SERVICE_UUID} on $deviceAddress.")
-                            _connectionStatus.value = ConnectionStatus.Error("Device not supported (missing chars)")
-                            this@BluetoothLeManager.disconnect() // Disconnect if not a compatible device
-                        }
+                    Log.d(TAG, "--- Characteristics found in service ${service.uuid} ---")
+                    if (service.characteristics.isNullOrEmpty()) {
+                        Log.d(TAG, "No characteristics found in this service.")
                     } else {
-                        Log.w(TAG, "Target Service ${GattAttributes.SERVICE_UUID} not found on $deviceAddress.")
-                        _connectionStatus.value = ConnectionStatus.Error("Required service not found")
+                        service.characteristics.forEach { char ->
+                            Log.d(TAG, "  UUID: ${char.uuid}, Properties: ${decodeProperties(char.properties)}")
+                            char.descriptors.forEach { desc ->
+                                Log.d(TAG, "    Descriptor UUID: ${desc.uuid}")
+                            }
+                        }
+                    }
+                    Log.d(TAG, "----------------------------------------------------")
+
+                    // Populate Writable Characteristics
+                    listOf(
+                        GattAttributes.CHAR_SET_DEVICE_TIME_UUID,
+                        GattAttributes.CHAR_SET_DISPENSE_SCHEDULE_UUID,
+                        GattAttributes.CHAR_TRIGGER_MANUAL_DISPENSE_UUID
+                    ).forEach { uuid ->
+                        service.getCharacteristic(uuid)?.also {
+                            discoveredCharacteristics[uuid] = it
+                            Log.d(TAG, "Discovered Writable Char: ${it.uuid} Properties: ${decodeProperties(it.properties)}")
+                        } ?: Log.w(TAG, "Expected Writable Char $uuid not found in service ${service.uuid}")
+                    }
+
+                    // Populate Readable/Notifiable Characteristics AND add to queue
+                    listOf(
+                        GattAttributes.CHAR_GET_DEVICE_TIME_UUID,
+                        GattAttributes.CHAR_GET_DISPENSE_SCHEDULE_UUID,
+                        GattAttributes.CHAR_GET_LAST_DISPENSE_INFO_UUID,
+                        GattAttributes.CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID,
+                        GattAttributes.CHAR_GET_DISPENSE_LOG_UUID
+                    ).forEach { uuid ->
+                        service.getCharacteristic(uuid)?.also { char ->
+                            discoveredCharacteristics[uuid] = char
+                            Log.d(TAG, "Discovered Readable/Notifiable Char: ${char.uuid} Properties: ${decodeProperties(char.properties)}")
+                            if ((char.properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0 ||
+                                (char.properties and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0) {
+                                notificationQueue.add(char) // For ArrayDeque, add is like offerLast
+                            }
+                        } ?: Log.w(TAG, "Expected Readable/Notifiable Char $uuid not found in service ${service.uuid}")
+                    }
+
+                    // Start processing the queue
+                    processNextNotificationInQueue()
+
+                    if (discoveredCharacteristics.any { it.key in listOf(
+                            GattAttributes.CHAR_TRIGGER_MANUAL_DISPENSE_UUID,
+                            GattAttributes.CHAR_GET_LAST_DISPENSE_INFO_UUID
+                        )}) {
+                        Log.i(TAG, "Relevant characteristics found. Connection established to $deviceAddress.")
+                        _connectionStatus.value = ConnectionStatus.Connected
+                        _connectedDevice.value = UiBluetoothDevice(
+                            gatt.device.address,
+                            try { gatt.device.name } catch (e: SecurityException) { null }
+                        )
+                    } else {
+                        Log.e(TAG, "No relevant/expected characteristics found for service ${GattAttributes.SERVICE_UUID} on $deviceAddress. Discovered keys: ${discoveredCharacteristics.keys}")
+                        _connectionStatus.value = ConnectionStatus.Error("Device not supported (missing chars)")
                         this@BluetoothLeManager.disconnect()
                     }
                 } else {
-                    Log.w(TAG, "onServicesDiscovered for $deviceAddress received error: $status")
-                    _connectionStatus.value = ConnectionStatus.Error("Service discovery failed: $status")
-                    this@BluetoothLeManager.disconnect() // Disconnect on service discovery failure
+                    Log.w(TAG, "Target Service ${GattAttributes.SERVICE_UUID} not found on $deviceAddress.")
+                    Log.d(TAG, "--- All services found on device $deviceAddress ---")
+                    gatt?.services?.forEach { srv ->
+                        Log.d(TAG, "  Service UUID: ${srv.uuid}")
+                        srv.characteristics.forEach { char ->
+                            Log.d(TAG, "    Characteristic UUID: ${char.uuid}, Properties: ${decodeProperties(char.properties)}")
+                        }
+                    }
+                    Log.d(TAG, "------------------------------------------------")
+                    _connectionStatus.value = ConnectionStatus.Error("Required service not found")
+                    this@BluetoothLeManager.disconnect()
                 }
+            } else {
+                Log.w(TAG, "onServicesDiscovered for $deviceAddress received error: $status")
+                _connectionStatus.value = ConnectionStatus.Error("Service discovery failed: $status")
+                this@BluetoothLeManager.disconnect()
             }
+        }
+
+        // Add this helper function to your BluetoothLeManager class (or as a top-level function in the file)
+        private fun decodeProperties(properties: Int): String {
+            val props = mutableListOf<String>()
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_BROADCAST) != 0) props.add("BROADCAST")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_READ) != 0) props.add("READ")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE) != 0) props.add("WRITE_NO_RESPONSE")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_WRITE) != 0) props.add("WRITE")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_NOTIFY) != 0) props.add("NOTIFY")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_INDICATE) != 0) props.add("INDICATE")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE) != 0) props.add("SIGNED_WRITE")
+            if ((properties and BluetoothGattCharacteristic.PROPERTY_EXTENDED_PROPS) != 0) props.add("EXTENDED_PROPS")
+            return props.joinToString(", ")
         }
 
         // Characteristic Read Callbacks
@@ -705,14 +754,28 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
             val deviceAddress = gatt?.device?.address ?: "Unknown Address"
             val charUuid = descriptor?.characteristic?.uuid
             Log.i(TAG, "onDescriptorWrite for char $charUuid on $deviceAddress, Descriptor: ${descriptor?.uuid}, Status: $status")
-            if (status == BluetoothGatt.GATT_SUCCESS) {
-                if (descriptor?.uuid == GattAttributes.CLIENT_CHARACTERISTIC_CONFIG_UUID) {
+
+            val currentlyProcessingChar = notificationQueue.firstOrNull() // Use firstOrNull() for peeking
+
+            if (descriptor?.uuid == GattAttributes.CLIENT_CHARACTERISTIC_CONFIG_UUID &&
+                currentlyProcessingChar != null &&
+                descriptor.characteristic.uuid == currentlyProcessingChar.uuid) {
+
+                if (status == BluetoothGatt.GATT_SUCCESS) {
                     Log.d(TAG, "CCCD descriptor write success for $charUuid on $deviceAddress.")
+                } else {
+                    Log.e(TAG, "Descriptor write FAILED for $charUuid on $deviceAddress, status: $status. Char: ${currentlyProcessingChar.uuid}")
+                    // You might want to stop processing or log more details.
                 }
+                // Remove the processed characteristic (success or fail)
+                if (notificationQueue.isNotEmpty()) {
+                    notificationQueue.removeFirst() // Use removeFirst() for polling (throws if empty, but we check isNotEmpty)
+                }
+                isProcessingNotificationQueue = false // Allow next one to start
+                processNextNotificationInQueue() // Process next in queue
             } else {
-                Log.e(TAG, "Descriptor write FAILED for $charUuid on $deviceAddress, status: $status")
-                // Optionally, if this was for enabling notifications and it failed,
-                // you might want to update a state or try to disable them locally.
+                // This was some other descriptor write, or queue is empty/mismatch
+                Log.d(TAG, "onDescriptorWrite not related to current notification queue head (Current head: ${currentlyProcessingChar?.uuid}, Received for: ${descriptor?.characteristic?.uuid}), or queue empty.")
             }
         }
     } // End of gattCallback object
@@ -735,5 +798,44 @@ class BluetoothLeManager(private val context: Context, private val coroutineScop
         scanJob?.cancel()
         connectJob?.cancel()
         Log.d(TAG, "BluetoothLeManager cleanup complete.")
+    }
+
+    private fun processNextNotificationInQueue() {
+        if (isProcessingNotificationQueue && notificationQueue.isNotEmpty()) {
+            Log.d(TAG, "Notification queue processing already in progress. Waiting for onDescriptorWrite. Queue size: ${notificationQueue.size}")
+            return
+        }
+        if (notificationQueue.isEmpty()) {
+            Log.i(TAG, "Notification queue is empty. All notifications enabled (or attempted).")
+            isProcessingNotificationQueue = false
+            // Consider this the point where all desired notifications are set up
+            // You might update a general "ready" status here.
+            return
+        }
+
+        val characteristic = notificationQueue.firstOrNull() // Use firstOrNull() for peeking
+
+        if (characteristic != null) {
+            Log.d(TAG, "Processing notification queue for: ${characteristic.uuid}. Queue size: ${notificationQueue.size}")
+            isProcessingNotificationQueue = true
+            if (!enableNotificationsFor(characteristic)) {
+                Log.e(TAG, "Failed to INITIATE notification enable for ${characteristic.uuid}. Removing from queue and trying next.")
+                // This means gatt.writeDescriptor returned false immediately
+                if (notificationQueue.isNotEmpty() && notificationQueue.firstOrNull() == characteristic) { // Ensure it's still the same char at head
+                    notificationQueue.removeFirst() // Remove failed one
+                }
+                isProcessingNotificationQueue = false // Allow next attempt
+                // Add a small delay before trying the next one to avoid overwhelming the BLE stack
+                coroutineScope.launch {
+                    delay(100) // Small delay, e.g., 100ms
+                    processNextNotificationInQueue() // Try next
+                }
+            }
+            // If enableNotificationsFor returns true, we wait for onDescriptorWrite
+        } else {
+            // Should not happen if notificationQueue.isEmpty() check is done first.
+            Log.w(TAG, "processNextNotificationInQueue: characteristic was null though queue not reported empty.")
+            isProcessingNotificationQueue = false
+        }
     }
 }
