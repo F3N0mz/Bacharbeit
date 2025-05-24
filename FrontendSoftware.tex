@@ -349,7 +349,7 @@ The structure behind \textbf{Device Connection} view consist of multiple files t
 \end{enumerate}
 Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that we will cover next, to understand how the view is created.
 \newpage
-\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. It contains:
+\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. Its top level structure can be seen in code block \ref{lst:DevConnVM} It contains:
 \begin{itemize}
 	\item \textbf{UiBluetoothDevice} data class serves as a simplified representation of a Bluetooth device, made to be displayed in the \ac{UI}. It's more convenient to use this in Composable functions than the raw Android \texttt{BluetoothDevice} object directly. Instances of this class are used to populate the list of found devices displayed on the screen(\ac{MAC} address, Device name and whether it is a Pill Dispenser).
 	\item \textbf{ConnectionStatus} class defines a set of distinct states representing the current status of the Bluetooth scanning and connection process. It is a \textbf{sealed} class, which means that all direct subclasses of a sealed class must be declared in the same file as the sealed class itself. Here it is used for a state-switch (using an already known command \texttt{when}). It has 4 state objects: \texttt{Disconnected, Scanning, Connecting, Connected}, each representing current relationship of an App to the device.
@@ -367,9 +367,122 @@ Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} an
 	\end{itemize}
 	In essence, this function is responsible for every element of the \ac{UI} seen within the "Device Connection Screen" window.
 	\item \textbf{DeviceListItem} is a helper Composable function responsible for rendering a single item in the list of found Bluetooth devices. In essence, this function is responsible for the contents of a single card from the list of scanned devices. It is called each time a new device is found to draw a card with information about this device within it.
-	\item \textbf{DevConnScreenPreview\_*} are multiple functions with similar names, each of them serves the debugging purpose, allowing previewing of different states of this window within Android Studio.
+	\item \textbf{DevConnScreenPreview\_*} are multiple functions with similar names and purpose. Each of them serves the debugging previewing, allowing checking different states of this window within Android Studio without having to compile and emulate the whole app.
 \end{itemize}
 
+\textbf{DevConnViewModel.kt} is responsible for State management. It contains:
+\begin{itemize}
+	\item \textbf{DevConnViewModel} class is a ViewModel designed to manage the UI-related data for the device connection screen. It is also worth noting that this ViewModel is used by other views that interact with the connected \ac{BLE} device. It inherits from Android built-in \texttt{AndroidViewModel}, which provides it with an Application context, useful for system services or application-wide resources.
+	\item \textbf{scanStatus} is a StateFlow exposes the current status of the BLE scanning process to the UI.
+	\item \textbf{foundDevices} is a StateFlow that exposes the current status of the connection to a BLE device. 
+	\item \textbf{connectingDevice} is a Stateflow that covers the specific device that is currently in the process of connecting or is already connected. It is nullable, therefore it can also be \texttt{null} if no device is connected.
+	\item \textbf{\_lastError} is a private, mutable state holder for any general error messages that the ViewModel itself might generate. Nullable, and is \texttt{null} when initialized.
+	\item  \textbf{displayError} is a StateFlow that Provides a single, consolidated error message for the UI. 
+	\item \textbf{startScan(), stopScan(), connectToDevice(device: UiBluetoothDevice) and disconnect()} are functions managing interaction with the deivce. They use corresponding methods from the \texttt{BluetoothLeManager} class.
+	\item \textbf{setGeneralError} is a helper function to allow setting a custom error message to \textbf{\_lastError}
+\end{itemize}
+The next StateFlows within the \texttt{DevConnViewModel} class are related to interaction with Timer/Counter of the device, which plays a pivotal role in its configuration and interaction in general
+\begin{itemize}
+	\item \textbf{\_deviceTime} is a StateFlow that holds the current time of the connected device, as a string. \textbf{deviceTime} is a similar non-mutable StateFlow to display the time in \ac{UI}.
+	\item \textbf{\_dispenseSchedule} is a StateFlow that contains the current dispense schedule of the connected dispenser device, as a string. \textbf{dispenseSchedule} is an immutable variant of this.
+	\item \textbf{\_lastDispenseInfo} Holds information about the last dispense event from the dispenser. \textbf{lastDispenseInfo} is an immutable variant.
+	\item \textbf{\_timeUntilNextDispense} Holds the calculated or received time until the next scheduled dispense. \textbf{timeUntilNextDispense} is an immutable variant.
+	\item \textbf{\_dispenseLog} Holds a log of dispense events from the dispenser. \textbf{dispenseLog} is an immutable variant.
+\end{itemize}
+
+The next code block \textbf{init \{. . .\}} is executed when an instance of \texttt{DevConnViewModel} is created. It is used to set up long-lived operations or observers. It launches a coroutine in \texttt{viewModelScope} to collect connection data from \texttt{bluetoothLeManager.connectionStatus}. If the status is not Connected, it resets all the device-specific data (\texttt{\_deviceTime, \_dispenseSchedule,} etc.) to their "N/A (Disconnected)" states.
+
+After this block, functions related to sending data from the App to the device are defined:
+\begin{itemize}
+	\item \textbf{triggerManualDispense} sends a command to the connected BLE device to perform a manual dispense.
+	\item \textbf{setDeviceTime} sends a command to the connected BLE device to set its internal time.
+	\item \textbf{setDispenseSchedule} sends a command to the connected BLE device to set its dispense schedule.
+	\item \textbf{requestDeviceTime} sends a request to the connected BLE device to read its current time characteristic.
+	\item \textbf{requestDispenseSchedule} sends a request to read the dispense schedule characteristic.
+	\item \textbf{requestLastDispenseInfo} sends a request to read the last dispense info characteristic.
+	\item \textbf{onCleared} This method is called when the ViewModel is no longer used and is about to be destroyed. It's the place to clean up any resources tied to the ViewModel's lifecycle.
+\end{itemize}
+
+\begin{lstlisting}[
+	style=kotlinstyle,
+	caption={Top-level structure of the \texttt{DevConnViewModel.kt} file},
+	label={lst:DevConnVM},
+	language=Kotlin,
+	numbers=left
+	]
+	package com.example.dispenser.screens.devconnection
+	
+	import ...
+	
+	class DevConnViewModel(
+	application: Application,
+	private val bluetoothLeManager: BluetoothLeManager
+	) : AndroidViewModel(application) {
+		
+		// State for scan status (now reflects manager's scanning state)
+		val scanStatus: StateFlow<ConnectionStatus> = bluetoothLeManager.isScanning
+		.map { isScanning ->
+			if (isScanning) ConnectionStatus.Scanning else ConnectionStatus.Disconnected
+		}
+		.stateIn(viewModelScope, SharingStarted.Lazily, ConnectionStatus.Disconnected)
+		
+		// State for found devices (directly from manager)
+		val foundDevices: StateFlow<List<UiBluetoothDevice>> = bluetoothLeManager.foundDevices
+		
+		// State for device connection status (directly from manager)
+		val connectionStatus: StateFlow<ConnectionStatus> = bluetoothLeManager.connectionStatus
+		
+		// State for the device currently being connected to/connected (directly from manager)
+		val connectingDevice: StateFlow<UiBluetoothDevice?> = bluetoothLeManager.connectedDevice
+		
+		// State for any last error message (can be a combination or specific errors)
+		// For now, let's use the connectionStatus error or a general one.
+		private val _lastError = MutableStateFlow<String?>(null) // For other types of errors if needed
+		val lastError: StateFlow<String?> = _lastError.asStateFlow()
+		
+		// Combine scan errors and connection errors into a displayable error
+		val displayError: StateFlow<String?> = combine(
+		bluetoothLeManager.connectionStatus, // For connection/scan errors from manager
+		_lastError // For other general errors set by ViewModel
+		) { connStatus, generalError ->
+			if (connStatus is ConnectionStatus.Error) {
+				connStatus.message
+			} else {
+				generalError
+			}
+		}.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+		
+		fun startScan() { ... }
+		fun stopScan() { ... }
+		fun connectToDevice(device: UiBluetoothDevice) { ... }
+		fun disconnect() { ... }
+		fun setGeneralError(message: String?) { ... }
+		
+		private val _deviceTime = MutableStateFlow<String?>("N/A")
+		val deviceTime: StateFlow<String?> = _deviceTime.asStateFlow()
+		
+		private val _dispenseSchedule = MutableStateFlow<String?>("N/A")
+		val dispenseSchedule: StateFlow<String?> = _dispenseSchedule.asStateFlow()
+		
+		private val _lastDispenseInfo = MutableStateFlow<String?>("N/A")
+		val lastDispenseInfo: StateFlow<String?> = _lastDispenseInfo.asStateFlow()
+		
+		private val _timeUntilNextDispense = MutableStateFlow<String?>("N/A")
+		val timeUntilNextDispense: StateFlow<String?> = _timeUntilNextDispense.asStateFlow()
+		
+		private val _dispenseLog = MutableStateFlow<String?>("N/A")
+		val dispenseLog: StateFlow<String?> = _dispenseLog.asStateFlow()
+		init { ... }
+		fun triggerManualDispense() { ... }
+		fun setDeviceTime(timeString: String) { ... }
+		fun setDispenseSchedule(scheduleString: String) { ... }
+		fun requestDeviceTime() { ... }
+		fun requestDispenseSchedule() { ... }
+		fun requestLastDispenseInfo() { ... }
+		override fun onCleared() { ... }
+	}
+\end{lstlisting}
+And Finally, \textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default ViewModel provider mechanism cannot supply.
 \subsubsection{Device Configuration}
   a. Add/Configure Dispense Schedule:
   i. Time of dispense (up to 3 a day). Get current timer/Clock

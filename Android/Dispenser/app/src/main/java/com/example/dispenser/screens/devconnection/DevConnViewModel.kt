@@ -16,7 +16,7 @@ class DevConnViewModel(
     application: Application,
     private val bluetoothLeManager: BluetoothLeManager
 ) : AndroidViewModel(application) {
-
+    /* ---------- State flows linked to BluetoothLeManager ---------- */
     // State for scan status (now reflects manager's scanning state)
     val scanStatus: StateFlow<ConnectionStatus> = bluetoothLeManager.isScanning
         .map { isScanning ->
@@ -33,8 +33,7 @@ class DevConnViewModel(
     // State for the device currently being connected to/connected (directly from manager)
     val connectingDevice: StateFlow<UiBluetoothDevice?> = bluetoothLeManager.connectedDevice
 
-    // State for any last error message (can be a combination or specific errors)
-    // For now, let's use the connectionStatus error or a general one.
+    /* ---------- Error handling ---------- */
     private val _lastError = MutableStateFlow<String?>(null) // For other types of errors if needed
     val lastError: StateFlow<String?> = _lastError.asStateFlow()
 
@@ -51,6 +50,9 @@ class DevConnViewModel(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
 
+
+
+    /* ---------- High-level control ---------- */
     fun startScan() {
         _lastError.value = null // Clear previous general errors
         // Permission check should happen in Activity/Fragment before calling this
@@ -79,7 +81,7 @@ class DevConnViewModel(
     fun setGeneralError(message: String?) {
         _lastError.value = message
     }
-
+    /* ---------- Characteristic-backed UI state ---------- */
     private val _deviceTime = MutableStateFlow<String?>("N/A")
     val deviceTime: StateFlow<String?> = _deviceTime.asStateFlow()
 
@@ -125,6 +127,7 @@ class DevConnViewModel(
             }
         }
     }
+    /* ---------- Characteristic write helpers ---------- */
     fun triggerManualDispense() {
         if (connectionStatus.value == ConnectionStatus.Connected) {
             // The ESP32 code for CHAR_TRIGGER_MANUAL_DISPENSE_UUID doesn't care about the value, just that a write occurred.
