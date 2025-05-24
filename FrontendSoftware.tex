@@ -220,12 +220,22 @@ The final function of the class is \textbf{cleanup} function. It releases all re
 \end{lstlisting}
 \newpage
 \subsection{User Interface}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_16}
+	\caption[Model-View-ViewModel Structure]{Model-View-ViewModel Structure. This image explains what model consists of and how different parts of model interact with each other. Credit \cite{García2023}}
+	\label{fig:screenshot16}
+\end{figure}
+
 Having finished with describing how the App handles interface between microcontroller using \ac{BLE}, the \ac{GUI} of the app will be covered next. It consists of 3 main views (called \textbf{Device Connection, Device Configuration and Monitoring \&  Status}), each of them contains different information and functions. Switching between views is done via a drawer panel on the left-hand side of the app, which slides open when the button at the top left is pressed.
 
 Once again, before moving forward, there is a certain terminology that needs to be covered. This thesis uses terminology used by official design guide\cite{android_ui_layer} from \textbf{Android Developers} team, which is an industry standard.
 \begin{itemize}
-	\item \textbf{Jetpack Compose} while not a technical term as the others are on the list, Jetpack Compose is the modern toolkit for building native Android \ac{UI}. It defines the paradigm under which all the other terms operate.
-	\item \textbf{ViewModel} class is a business logic or screen level state holder. Its principal advantage is that it caches state and persists it through configuration changes. The alternative to a ViewModel is a plain class that holds the data displayed in the \ac{UI}. This can become a problem when navigating between activities or Navigation destinations. Doing so destroys that data if it isn't stored using the saving instance state mechanism. 
+	\item \textbf{Jetpack Compose} while not a technical term as the others are on the list, Jetpack Compose is the modern toolkit for building native Android \ac{UI}. It defines the paradigm under which all the other terms operate. It operates under the \ac{MVVM} design pattern.
+	\item \textbf{\ac{MVVM}} is an architectural design pattern that separates an application into three (View, Model, ViewModel) components to enhance modularity, testability, and maintainability. Advantages of this pattern is that it separates logic from presentation, allowing easier testing, debugging and troubleshooting\cite{García2023}.
+	\item \textbf{Model} is responsible for manipulation, access and storage of data.
+	\item \textbf{View} is the part of the architecture that a user sees on the screen. 
+	\item \textbf{ViewModel} class is a business logic or screen level state holder. ViewModel is the core of the \ac{MVVM} architecture and sits between the View and the Model. Its principal advantage is that it caches state and persists it through configuration changes. The alternative to a ViewModel is a plain class that holds the data displayed in the \ac{UI}. This can become a problem when navigating between activities or Navigation destinations. Doing so destroys that data if it isn't stored using the saving instance state mechanism. 
 	\item \textbf{ViewModelFactory} is a class responsible for creating instances of ViewModels. It's needed because ViewModels often have dependencies that need to be provided to them when they are created.
 	\item \textbf{UI State} represents what to show on the screen. For the Device Connection screen, this includes whether the app is currently scanning, the list of found Bluetooth devices, the current connection status (e.g., "Disconnected", "Connecting", "Connected"), and any error messages. This state typically lives in or is managed by the ViewModel.
 	\item \textbf{Composable Function (or "Composable")} This is the fundamental building block of \ac{UI} in Jetpack Compose. Instead of traditional XML layouts, \ac{UI} is defined by writing functions annotated with @Composable. These functions describe what the \ac{UI} should look like for a given state, not how to construct it step-by-step.
@@ -234,6 +244,8 @@ Once again, before moving forward, there is a certain terminology that needs to 
 	\item \textbf{Event Handling (Callbacks/Lambdas)} is based on user interaction with \ac{UI}. Composables can trigger actions. This is usually done by passing lambda functions (callbacks) as parameters to the Composables.
 	\item \textbf{StateFlow} has already been defined in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section. It is a state-holder observable "hot" flow that always has a value and emits updates to its collectors. This term is even more important here, as it creates a bridge for understanding how User Interface interacts with data. In context of User Interface, it is is a primary mechanism for the \textbf{ViewModel} to expose \ac{UI} \textbf{State} to the Composable. Composable functions can observe (or "collect") these StateFlows, When the StateFlow emits a new value, collectAsState() receives this update and signals to the Compose runtime that the state read by a Composable has changed.
 \end{itemize}
+
+\subsubsection{MainActivity.kt}
 The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
 
 Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \texttt{MainActivity} class's \texttt{onCreate} method to set up the UI.
@@ -330,49 +342,10 @@ Then, it has 4 different methods, each serving different purpose:
 	@Composable
 	fun AppScaffoldWithDrawerPreview() { ... }
 \end{lstlisting}
-
-\subsubsection{Device Connection}
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.8\linewidth]{Figures/devConnView}
-	\caption[Device connection view.]{Device connection view.}
-	\label{fig:devconnview}
-\end{figure}
-The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
-\begin{enumerate}
-	\item \textbf{DevConnScreen.kt} file contains the Composable function \texttt{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen.
-	\item \textbf{DevConnViewModel.kt} file contains State management logic. It acts as a bridge between the UI (\texttt{DevConnScreen}) and the data layer (\texttt{BluetoothLeManager}). It holds the state displayed by the UI and processes user actions.
-	\item \textbf{BluetoothLeManager.kt} Covered in previous section, is a class responsible for handling \ac{BLE} interactions between Device, Android Bluetooth \ac{API} and \ac{GUI}.
-	\item \textbf{MainActivity.kt} is the main entry point of this app. It sets up the overall UI structure, including the navigation drawer and the content area where all the screens are displayed.
-	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \texttt{DevConnViewModel}
-	\item \textbf{GattAttributes.kt} Defines the unique UUIDs for \ac{BLE} service and characteristics on the ESP32. Already covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
-\end{enumerate}
-Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that we will cover next, to understand how the view is created.
-\newpage
-\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. Its top level structure can be seen in code block \ref{lst:DevConnVM} It contains:
+\subsubsection{DevConnViewModel.kt}
+\textbf{DevConnViewModel.kt} is responsible for State management. Following the \ac{MVVM} pattern it is the ViewModel part of the app. It contains:
 \begin{itemize}
-	\item \textbf{UiBluetoothDevice} data class serves as a simplified representation of a Bluetooth device, made to be displayed in the \ac{UI}. It's more convenient to use this in Composable functions than the raw Android \texttt{BluetoothDevice} object directly. Instances of this class are used to populate the list of found devices displayed on the screen(\ac{MAC} address, Device name and whether it is a Pill Dispenser).
-	\item \textbf{ConnectionStatus} class defines a set of distinct states representing the current status of the Bluetooth scanning and connection process. It is a \textbf{sealed} class, which means that all direct subclasses of a sealed class must be declared in the same file as the sealed class itself. Here it is used for a state-switch (using an already known command \texttt{when}). It has 4 state objects: \texttt{Disconnected, Scanning, Connecting, Connected}, each representing current relationship of an App to the device.
-	\item \textbf{DevConnScreen} is a primary composable function that defines the entire layout and behavior of the \textbf{Device Connection} screen. It is quite vast function in a sense that through it the whole view is displayed, therefore it is worth documenting it deeper. \texttt{DevConnScreen} takes many input parameters:
-	\begin{itemize}
-		\item \textbf{scanStatus} is the current status of the scanning process
-		\item \textbf{foundDevices} is list of discovered Bluetooth devices.
-		\item \textbf{connectionStatus} is current status of the device connection.
-		\item \textbf{connectingDevice} is the device that is currently being connected to, or is already connected.
-		\item \textbf{lastError} general error message that might not be part of either  \texttt{scanStatus} or \texttt{connectionStatus}
-		\item \textbf{onStartScanClick} is a callback function invoked when the "Start Scan" button is clicked.
-		\item \textbf{onStopScanClick} is a callback function invoked when the "Stop Scan" button is clicked.
-		\item \textbf{onDeviceClick} is a callback function invoked when a device in the list is clicked.
-		\item \textbf{onDisconnectClick}is a callback function invoked when the "Disconnect" button is clicked.
-	\end{itemize}
-	In essence, this function is responsible for every element of the \ac{UI} seen within the "Device Connection Screen" window.
-	\item \textbf{DeviceListItem} is a helper Composable function responsible for rendering a single item in the list of found Bluetooth devices. In essence, this function is responsible for the contents of a single card from the list of scanned devices. It is called each time a new device is found to draw a card with information about this device within it.
-	\item \textbf{DevConnScreenPreview\_*} are multiple functions with similar names and purpose. Each of them serves the debugging previewing, allowing checking different states of this window within Android Studio without having to compile and emulate the whole app.
-\end{itemize}
-
-\textbf{DevConnViewModel.kt} is responsible for State management. It contains:
-\begin{itemize}
-	\item \textbf{DevConnViewModel} class is a ViewModel designed to manage the UI-related data for the device connection screen. It is also worth noting that this ViewModel is used by other views that interact with the connected \ac{BLE} device. It inherits from Android built-in \texttt{AndroidViewModel}, which provides it with an Application context, useful for system services or application-wide resources.
+	\item \textbf{DevConnViewModel} class is a ViewModel designed to manage the UI-related data for the device connection screen.  This ViewModel is used by all views that interact with the connected \ac{BLE} device. It inherits from Android built-in \texttt{AndroidViewModel}, which provides it with an Application context, useful for system services or application-wide resources.
 	\item \textbf{scanStatus} is a StateFlow exposes the current status of the BLE scanning process to the UI.
 	\item \textbf{foundDevices} is a StateFlow that exposes the current status of the connection to a BLE device. 
 	\item \textbf{connectingDevice} is a Stateflow that covers the specific device that is currently in the process of connecting or is already connected. It is nullable, therefore it can also be \texttt{null} if no device is connected.
@@ -482,22 +455,109 @@ After this block, functions related to sending data from the App to the device a
 		override fun onCleared() { ... }
 	}
 \end{lstlisting}
-And Finally, \textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default ViewModel provider mechanism cannot supply.
+
+\textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default ViewModel provider mechanism cannot supply.
+\newpage
+\subsubsection{Device Connection}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.8\linewidth]{Figures/devConnView}
+	\caption[Device connection view.]{Device connection view.}
+	\label{fig:devconnview}
+\end{figure}
+The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
+\begin{enumerate}
+	\item \textbf{DevConnScreen.kt} file contains the Composable function \texttt{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen. This file represents the \textbf{View} layer of \ac{MVVM} pattern.
+	\item \textbf{DevConnViewModel.kt} is already covered before. This file contains State management logic. It acts as a bridge between the UI (\texttt{DevConnScreen}) and the data layer (\texttt{BluetoothLeManager}). It holds the state displayed by the UI and processes user actions. This file represents the \textbf{ViewModel} layer of \ac{MVVM} pattern.
+	\item \textbf{BluetoothLeManager.kt} Covered in previous section, is a class responsible for handling \ac{BLE} interactions between Device, Android Bluetooth \ac{API} and \ac{GUI}. Since it manages logic and background functionality, it is part of \textbf{Model} layer of \ac{MVVM} pattern.
+	\item \textbf{MainActivity.kt} is the main entry point of this app. It sets up the overall UI structure, including the navigation drawer and the content area where all the screens are displayed.
+	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \texttt{DevConnViewModel}
+	\item \textbf{GattAttributes.kt} Defines the unique UUIDs for \ac{BLE} service and characteristics on the ESP32. Already covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
+\end{enumerate}
+Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that we will cover next, to understand how the view is created.
+\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. Its top level structure can be seen in code block \ref{lst:DevConnVM} It contains:
+\begin{itemize}
+	\item \textbf{UiBluetoothDevice} data class serves as a simplified representation of a Bluetooth device, made to be displayed in the \ac{UI}. It's more convenient to use this in Composable functions than the raw Android \texttt{BluetoothDevice} object directly. Instances of this class are used to populate the list of found devices displayed on the screen(\ac{MAC} address, Device name and whether it is a Pill Dispenser).
+	\item \textbf{ConnectionStatus} class defines a set of distinct states representing the current status of the Bluetooth scanning and connection process. It is a \textbf{sealed} class, which means that all direct subclasses of a sealed class must be declared in the same file as the sealed class itself. Here it is used for a state-switch (using an already known command \texttt{when}). It has 4 state objects: \texttt{Disconnected, Scanning, Connecting, Connected}, each representing current relationship of an App to the device.
+	\item \textbf{DevConnScreen} is a primary composable function that defines the entire layout and behavior of the \textbf{Device Connection} screen. It is quite vast function in a sense that through it the whole view is displayed, therefore it is worth documenting it deeper. \texttt{DevConnScreen} takes many input parameters:
+	\begin{itemize}
+		\item \textbf{scanStatus} is the current status of the scanning process
+		\item \textbf{foundDevices} is list of discovered Bluetooth devices.
+		\item \textbf{connectionStatus} is current status of the device connection.
+		\item \textbf{connectingDevice} is the device that is currently being connected to, or is already connected.
+		\item \textbf{lastError} general error message that might not be part of either  \texttt{scanStatus} or \texttt{connectionStatus}
+		\item \textbf{onStartScanClick} is a callback function invoked when the "Start Scan" button is clicked.
+		\item \textbf{onStopScanClick} is a callback function invoked when the "Stop Scan" button is clicked.
+		\item \textbf{onDeviceClick} is a callback function invoked when a device in the list is clicked.
+		\item \textbf{onDisconnectClick}is a callback function invoked when the "Disconnect" button is clicked.
+	\end{itemize}
+	In essence, this function is responsible for every element of the \ac{UI} seen within the "Device Connection Screen" window.
+	\item \textbf{DeviceListItem} is a helper Composable function responsible for rendering a single item in the list of found Bluetooth devices. In essence, this function is responsible for the contents of a single card from the list of scanned devices. It is called each time a new device is found to draw a card with information about this device within it.
+	\item \textbf{DevConnScreenPreview\_*} are multiple functions with similar names and purpose. Each of them serves the debugging previewing, allowing checking different states of this window within Android Studio without having to compile and emulate the whole app.
+\end{itemize}
+
 \subsubsection{Device Configuration}
-  a. Add/Configure Dispense Schedule:
-  i. Time of dispense (up to 3 a day). Get current timer/Clock
-  ii. Save/Load Schedule. Stored in android app
-  
-  b. View Current Schedule:
-  i. Display a clear list of all programmed dispense times and associated details. (Parse T/C info into Calendar info)
-  
-  c. Edit/Delete Schedule:
-  i. Allow modification of existing schedules (time, days, name).
-  ii. Allow removal of unneeded schedules.
-  iii. (Important) Ensure changes are reliably sent and confirmed by the dispenser hardware. (ESP32/App T/C Matching)
-  
-  d. Configure Device Time Get current Clock/Set Current Clock
-  
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/devConfView}
+	\caption[Device Configuration view.]{Layout of the device configuration view file}
+	\label{fig:devconfview}
+\end{figure}
+
+The Device Configuration screen has the following functionality, as also seen on image \ref{fig:devconfview}:
+\begin{itemize}
+		\item \textbf{View Current Device Time}: Displays the time currently set on the ESP32.
+		\item \textbf{Set Device Time}: Manually enter a time string or set the ESP32's time to the phone's current time.
+		\item \textbf{View Current Dispense Schedule:} Displays the dispense schedule set on the microcontroller.
+		\item \textbf{Set Dispense Schedule}: Enter a new dispense schedule string.
+		\item \textbf{Trigger Manual Dispense}: Command the ESP32 to perform a single dispense operation.
+\end{itemize}
+All these interactions need an activle Bluetooth connection to the device.
+
+The files contributing to this view are \textbf{DevConfScreen.kt, DevConnViewModel.kt, BluetoothLeManager.kt, GattAttributes.kt, MainActivity.kt}. They serve the same purpose for this view as for the previous one. What differs the two views is the controller file, in this case \textbf{DevConfScreen.kt}. It is the file that defines the structure and functionality of this screen. Unlike \textbf{DevConnScreen} file, this one is much smaller, because \textbf{DevConnScreen} also serves as an initialiser for services, permissions etc. which is not present here. Essentially all the functionality is relegated to other files, classes and functions. This file only binds them together and lays down the structure of the \ac{UI}. as seen in block \ref{lst:DeviceConfigScreen}, This file contains a sole function called \texttt{DeviceConfigurationScreen} which takes \texttt{DevConnViewModel} ViewModel as an input parameter to fetch necessary data from the device.
+\newpage
+\begin{lstlisting}[
+	style=kotlinstyle,
+	caption={Top-level structure of the \texttt{DeviceConfigurationScreen.kt} file},
+	label={lst:DeviceConfigScreen},
+	language=Kotlin,
+	numbers=left
+	]
+	package com.example.dispenser.screens
+	
+	import ...
+
+	
+	@OptIn(ExperimentalMaterial3Api::class)
+	@Composable
+	fun DeviceConfigurationScreen(devConnViewModel: DevConnViewModel) {
+		val connectionStatus by devConnViewModel.connectionStatus.collectAsState()
+		val isConnected = connectionStatus == ConnectionStatus.Connected
+		
+		var timeToSetText by remember { mutableStateOf("") }
+		var scheduleToSetText by remember { mutableStateOf("") }
+		
+		val currentDeviceTime by devConnViewModel.deviceTime.collectAsState()
+		val currentSchedule by devConnViewModel.dispenseSchedule.collectAsState()
+		
+		LaunchedEffect(isConnected) {
+			if (isConnected) {
+				devConnViewModel.requestDeviceTime()
+				devConnViewModel.requestDispenseSchedule()
+			}
+		}
+		
+		Column(
+		modifier = Modifier
+		.fillMaxSize()
+		.padding(16.dp),
+		horizontalAlignment = Alignment.CenterHorizontally,
+		verticalArrangement = Arrangement.spacedBy(10.dp)
+		) { \UI Components here\	}
+		}
+	}
+\end{lstlisting}
+
 \subsubsection{Monitoring \&  Status}
 
 a. Device Status Display:

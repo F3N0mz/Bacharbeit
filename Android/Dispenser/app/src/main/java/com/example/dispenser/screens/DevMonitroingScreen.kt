@@ -9,7 +9,7 @@ import androidx.compose.ui.unit.dp
 import com.example.dispenser.screens.devconnection.DevConnViewModel
 
 @Composable
-fun MonitoringStatusScreen(devConnViewModel: DevConnViewModel) {
+fun DeviceMonitoringScreen(devConnViewModel: DevConnViewModel) {
     val connectionStatus by devConnViewModel.connectionStatus.collectAsState()
     val isConnected = connectionStatus == ConnectionStatus.Connected
 

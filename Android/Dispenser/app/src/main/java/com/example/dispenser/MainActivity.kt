@@ -24,12 +24,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.dispenser.ble.BluetoothLeManager
-import com.example.dispenser.screens.ConnectionStatus // From DevConnScreen.kt
 import com.example.dispenser.screens.DevConnScreen
-import com.example.dispenser.screens.UiBluetoothDevice // From DevConnScreen.kt
 import com.example.dispenser.screens.devconnection.DevConnViewModel
 import com.example.dispenser.screens.devconnection.DevConnViewModelFactory
 import com.example.dispenser.ui.theme.DispenserTheme
@@ -39,7 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import com.example.dispenser.screens.DeviceConfigurationScreen
-import com.example.dispenser.screens.MonitoringStatusScreen
+import com.example.dispenser.screens.DeviceMonitoringScreen
 
 class MainActivity : ComponentActivity() {
 
@@ -235,7 +232,7 @@ fun AppScaffoldWithDrawer(
                         }
                     }
                     "Device Configuration" -> DeviceConfigurationScreen(devConnViewModel = devConnViewModel)
-                    "Monitoring & Status" -> MonitoringStatusScreen(devConnViewModel = devConnViewModel)
+                    "Monitoring & Status" -> DeviceMonitoringScreen(devConnViewModel = devConnViewModel)
                     else -> Text("Error: Unknown Screen Selected")
                 }
             }

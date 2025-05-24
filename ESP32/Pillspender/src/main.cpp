@@ -185,7 +185,7 @@ void setup() {
     pServer->setCallbacks(new MyServerCallbacks());
     BLEService *pService = pServer->createService(SERVICE_UUID);
 
-
+    Serial.println("Starting BLE Characteristic Setup...");
     // --- Writable Characteristics ---
     pSetDeviceTimeCharacteristic = pService->createCharacteristic(
                                        CHAR_SET_DEVICE_TIME_UUID,
@@ -210,38 +210,67 @@ void setup() {
     pTriggerManualDispenseCharacteristic->addDescriptor(new BLE2902());
 
     // --- Readable Characteristics ---
+    Serial.println("Creating pGetDeviceTimeCharacteristic...");
     pGetDeviceTimeCharacteristic = pService->createCharacteristic(
-                                       CHAR_GET_DEVICE_TIME_UUID,
-                                       BLECharacteristic::PROPERTY_READ |
-                                       BLECharacteristic::PROPERTY_NOTIFY
-                                   );
-    pGetDeviceTimeCharacteristic->setValue("Device Time: Not Set");
-    pGetDeviceTimeCharacteristic->addDescriptor(new BLE2902());
+                                    CHAR_GET_DEVICE_TIME_UUID,
+                                    BLECharacteristic::PROPERTY_READ |
+                                    BLECharacteristic::PROPERTY_NOTIFY);
+    if (pGetDeviceTimeCharacteristic == nullptr) Serial.println("ERROR: pGetDeviceTimeCharacteristic is NULL!");
+    else {
+        pGetDeviceTimeCharacteristic->setValue("Device Time: Not Set");
+        pGetDeviceTimeCharacteristic->addDescriptor(new BLE2902());
+        Serial.println("pGetDeviceTimeCharacteristic created and descriptor added.");
+    }
 
+    Serial.println("Creating pGetDispenseScheduleCharacteristic...");
     pGetDispenseScheduleCharacteristic = pService->createCharacteristic(
-                                             CHAR_GET_DISPENSE_SCHEDULE_UUID,
-                                             BLECharacteristic::PROPERTY_READ |
-                                             BLECharacteristic::PROPERTY_NOTIFY
-                                         );
-    pGetDispenseScheduleCharacteristic->setValue("Schedule: Empty");
-    pGetDispenseScheduleCharacteristic->addDescriptor(new BLE2902());
+                                            CHAR_GET_DISPENSE_SCHEDULE_UUID,
+                                            BLECharacteristic::PROPERTY_READ |
+                                            BLECharacteristic::PROPERTY_NOTIFY);
+    if (pGetDispenseScheduleCharacteristic == nullptr) Serial.println("ERROR: pGetDispenseScheduleCharacteristic is NULL!");
+    else {
+        pGetDispenseScheduleCharacteristic->setValue("Schedule: Empty");
+        pGetDispenseScheduleCharacteristic->addDescriptor(new BLE2902());
+        Serial.println("pGetDispenseScheduleCharacteristic created and descriptor added.");
+    }
 
+    Serial.println("Creating pGetLastDispenseInfoCharacteristic...");
     pGetLastDispenseInfoCharacteristic = pService->createCharacteristic(
-                                             CHAR_GET_LAST_DISPENSE_INFO_UUID,
-                                             BLECharacteristic::PROPERTY_READ |
-                                             BLECharacteristic::PROPERTY_NOTIFY
-                                         );
-    pGetLastDispenseInfoCharacteristic->setValue("Last Dispense: None");
-    pGetLastDispenseInfoCharacteristic->addDescriptor(new BLE2902());
+                                            CHAR_GET_LAST_DISPENSE_INFO_UUID,
+                                            BLECharacteristic::PROPERTY_READ |
+                                            BLECharacteristic::PROPERTY_NOTIFY);
+    if (pGetLastDispenseInfoCharacteristic == nullptr) Serial.println("ERROR: pGetLastDispenseInfoCharacteristic is NULL!");
+    else {
+        pGetLastDispenseInfoCharacteristic->setValue("Last Dispense: None");
+        pGetLastDispenseInfoCharacteristic->addDescriptor(new BLE2902());
+        Serial.println("pGetLastDispenseInfoCharacteristic created and descriptor added.");
+    }
 
+    /*Serial.println("Creating pGetTimeUntilNextDispenseCharacteristic...");
     pGetTimeUntilNextDispenseCharacteristic = pService->createCharacteristic(
-                                                  CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID,
-                                                  BLECharacteristic::PROPERTY_READ |
-                                                  BLECharacteristic::PROPERTY_NOTIFY
-                                              );
-    pGetTimeUntilNextDispenseCharacteristic->setValue("Next Dispense: Unknown");
-    pGetTimeUntilNextDispenseCharacteristic->addDescriptor(new BLE2902());
+                                                CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID,
+                                                BLECharacteristic::PROPERTY_READ |
+                                                BLECharacteristic::PROPERTY_NOTIFY);
+    if (pGetTimeUntilNextDispenseCharacteristic == nullptr) Serial.println("ERROR: pGetTimeUntilNextDispenseCharacteristic is NULL!");
+    else {
+        pGetTimeUntilNextDispenseCharacteristic->setValue("Next Dispense: Unknown");
+        pGetTimeUntilNextDispenseCharacteristic->addDescriptor(new BLE2902());
+        Serial.println("pGetTimeUntilNextDispenseCharacteristic created and descriptor added.");
+    }
 
+    Serial.println("Creating pGetDispenseLogCharacteristic...");
+    pGetDispenseLogCharacteristic = pService->createCharacteristic(
+                                        CHAR_GET_DISPENSE_LOG_UUID,
+                                        BLECharacteristic::PROPERTY_READ |
+                                        BLECharacteristic::PROPERTY_NOTIFY);
+    if (pGetDispenseLogCharacteristic == nullptr) Serial.println("ERROR: pGetDispenseLogCharacteristic is NULL!");
+    else {
+        pGetDispenseLogCharacteristic->setValue("Log: Empty");
+        pGetDispenseLogCharacteristic->addDescriptor(new BLE2902());
+        Serial.println("pGetDispenseLogCharacteristic created and descriptor added.");
+}*/
+
+Serial.println("Finished BLE Characteristic Setup.");
     pGetDispenseLogCharacteristic = pService->createCharacteristic(
                                         CHAR_GET_DISPENSE_LOG_UUID,
                                         BLECharacteristic::PROPERTY_READ |
@@ -273,6 +302,21 @@ void setup() {
     Serial.println("BLE GATT Server started, advertising.");
     Serial.println("Device Name: PillDispenserESP32");
     Serial.print("Service UUID: "); Serial.println(SERVICE_UUID);
+
+    Serial.println("\n--- BLE Characteristics ---");
+    Serial.println("Writable Characteristics:");
+    Serial.println("Set Device Time:            " + String(CHAR_SET_DEVICE_TIME_UUID));
+    Serial.println("Set Dispense Schedule:      " + String(CHAR_SET_DISPENSE_SCHEDULE_UUID));
+    Serial.println("Trigger Manual Dispense:    " + String(CHAR_TRIGGER_MANUAL_DISPENSE_UUID));
+
+    Serial.println("\nReadable Characteristics:");
+    Serial.println("Get Device Time:            " + String(CHAR_GET_DEVICE_TIME_UUID));
+    Serial.println("Get Dispense Schedule:      " + String(CHAR_GET_DISPENSE_SCHEDULE_UUID));
+    Serial.println("Get Last Dispense Info:     " + String(CHAR_GET_LAST_DISPENSE_INFO_UUID));
+    Serial.println("Get Time Until Next Disp.:  " + String(CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID));
+    Serial.println("Get Dispense Log:           " + String(CHAR_GET_DISPENSE_LOG_UUID));
+    Serial.println("-----------------------------\n");
+
 }
 
 void loop() {
@@ -303,8 +347,8 @@ void loop() {
         lastUpdateTime = millis();
         // Example: Simulate updating time until next dispense
         String timeVal = "Next: " + String(millis()/1000) + "s (simulated)";
-        pGetTimeUntilNextDispenseCharacteristic->setValue(timeVal.c_str());
-        pGetTimeUntilNextDispenseCharacteristic->notify(); // Send notification to subscribed client
+        //pGetTimeUntilNextDispenseCharacteristic->setValue(timeVal.c_str());
+        //pGetTimeUntilNextDispenseCharacteristic->notify(); // Send notification to subscribed client
         Serial.println("Notified: " + timeVal);
     }
     if (isStepping) {
