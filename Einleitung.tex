@@ -76,6 +76,7 @@ For each step there is a different toolset that will be covered here and then me
 		\newline - \textbf{Google Gemini 2.5 Pro + AI Studio}
 		\newline - \textbf{Deepseek R1}
 		\newline \textbf{GitHub Copilot} is integrated within \ac{VSCode} as a plugin. It is sparingly used whenever there are smaller issues, mostly syntax errors to be fixed, as unlike the three models mentioned above it is not a thinking model.
+		\newline \textbf{Gemini} is integrated into Android Studio. While Android Studio is a powerful, modern \ac{IDE} on its own, offering many suggestions and analytics, it has also an AI-Model built in (however version is not known, neither is it disclosed anywhere in the Android Studio documentation). It was used sparingly when \ac{IDE} suggestions didn't help.
 		
 	\end{itemize}
 	\item\textbf{3D Model Prototyping and Design}
@@ -89,9 +90,10 @@ For each step there is a different toolset that will be covered here and then me
 		
 		\item \textbf{Android Development Studio + Kotlin} This combination is a industry standard in Android development. Google has established that Kotlin is preferred language for developing an Android apps \cite{googleIO2019Kotlin}. 
 		
-		\textbf{Android Development Studio} \ac{IDE} is a joint project of Google and JetBrains, an innovative \ac{IDE} development company. it has many powerful features such as Previews, Device Emulators, Layout Editor and Gradle Build System. These features have alleviated the development process.
+		\textbf{Android Development Studio} \ac{IDE} is a joint project of Google and JetBrains, an innovative \ac{IDE} development company. it has many powerful features such as Previews, Device Emulators, Layout Editor and Gradle Build System. These features have alleviated the development process and debugging process.
 		
-		\textbf{Kotlin} was chosen because an alternative would be Java, which is not personally preferred development language. Besides being industry standard, Kotlin has very easy-to-understand syntax, \textit{Null-Safety} (a feature of the language, which prevents certain variables to have a null values i.e. value, the pointer of which doesn't have an address), that prevents very common Null-pointer exception runtime errors and also google's official trainings and tutorials which were essential in learning the language. 
+		\textbf{Kotlin} was chosen because an alternative would be Java, which is not personally preferred development language. Besides being industry standard, Kotlin has very easy-to-understand syntax, \textit{Null-Safety} (a feature of the language, which prevents certain variables to have a null values i.e. value, the pointer of which doesn't have an address), that prevents very common Null-pointer exception runtime errors and also google's official trainings and tutorials which were essential in learning the language.
+		\item \textbf{nRF Connect} is an Android app that allows troubleshooting \ac{BLE} connection issues. it displays important information about \ac{BLE} stack of the connected device, which helps finding "lost" characteristics.  
 	\end{itemize}
 	\item\textbf{Backend Development}
 	\begin{itemize}
@@ -100,7 +102,7 @@ For each step there is a different toolset that will be covered here and then me
 		
 		\textbf{VSCode} is chosen mostly because of ease of use and flexibility. It is Open-Source, therefore there has been a huge community effort to develop plugins and also one can adjust almost every component of the editor as one sees fit, for example by creating and running custom scripts.
 		
-		\textbf{Platform.io} has many important features, such as Microcontroller templates, built-in C++ and Arduino libraries, Device monitoring (data from connected device can be logged into terminal) and Upload of compiled code. As mentioned before, it is a standard for Arduino software development and enjoys a wide support from the community. This is important not only for the development of a device, but also for maintenance of its code in the future, should a project be further expanded.
+		\textbf{Platform.io} \ac{VSCode} pluginhas many important features, such as Microcontroller templates, built-in C++ and Arduino libraries, Device monitoring (data from connected device can be logged into terminal) and Upload of compiled code. As mentioned before, it is a standard for Arduino software development and enjoys a wide support from the community. This is important not only for the development of a device, but also for maintenance of its code in the future, should a project be further expanded.
 		
 		\textbf{C++} Was chosen because of efficiency, due to being one of the lower-level programming languages, close to hardware, while also being able to abstract away, reducing the need to manually flip bits on the hardware. Furthermore, unlike C, another commonly used language for hardware programming, C++ supports \ac{OOP}, whose features (Incapsulation, Polymorphism, Inheritance) offer aid in programming a device.
 		

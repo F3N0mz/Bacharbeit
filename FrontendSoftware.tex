@@ -244,9 +244,15 @@ Once again, before moving forward, there is a certain terminology that needs to 
 	\item \textbf{Event Handling (Callbacks/Lambdas)} is based on user interaction with \ac{UI}. Composables can trigger actions. This is usually done by passing lambda functions (callbacks) as parameters to the Composables.
 	\item \textbf{StateFlow} has already been defined in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section. It is a state-holder observable "hot" flow that always has a value and emits updates to its collectors. This term is even more important here, as it creates a bridge for understanding how User Interface interacts with data. In context of User Interface, it is is a primary mechanism for the \textbf{ViewModel} to expose \ac{UI} \textbf{State} to the Composable. Composable functions can observe (or "collect") these StateFlows, When the StateFlow emits a new value, collectAsState() receives this update and signals to the Compose runtime that the state read by a Composable has changed.
 \end{itemize}
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=1\linewidth]{Figures/Screenshot_17}
+	\caption[App Structure diagram]{Diagram of an Android App showing how its different components interact with each other and with backend. The structure is divided into 3 parts: View Layer, ViewModel Layer and Model Layer, corresponding to \ac{MVVM} paradigm.}
+	\label{fig:screenshot17}
+\end{figure}
 
 \subsubsection{MainActivity.kt}
-The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
+The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file as can be seen on image \ref{fig:screenshot17}. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
 
 Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \texttt{MainActivity} class's \texttt{onCreate} method to set up the UI.
 \texttt{AppScaffoldWithDrawer} has numerous tasks:
@@ -343,7 +349,7 @@ Then, it has 4 different methods, each serving different purpose:
 	fun AppScaffoldWithDrawerPreview() { ... }
 \end{lstlisting}
 \subsubsection{DevConnViewModel.kt}
-\textbf{DevConnViewModel.kt} is responsible for State management. Following the \ac{MVVM} pattern it is the ViewModel part of the app. It contains:
+\textbf{DevConnViewModel.kt} is responsible for State management. Following the \ac{MVVM} pattern it is the ViewModel part of the app Besides the Factory, this is the sole ViewModel used for this app, as shown here \ref{fig:screenshot17}. It contains:
 \begin{itemize}
 	\item \textbf{DevConnViewModel} class is a ViewModel designed to manage the UI-related data for the device connection screen.  This ViewModel is used by all views that interact with the connected \ac{BLE} device. It inherits from Android built-in \texttt{AndroidViewModel}, which provides it with an Application context, useful for system services or application-wide resources.
 	\item \textbf{scanStatus} is a StateFlow exposes the current status of the BLE scanning process to the UI.
@@ -459,12 +465,6 @@ After this block, functions related to sending data from the App to the device a
 \textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default ViewModel provider mechanism cannot supply.
 \newpage
 \subsubsection{Device Connection}
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.8\linewidth]{Figures/devConnView}
-	\caption[Device connection view.]{Device connection view.}
-	\label{fig:devconnview}
-\end{figure}
 The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
 \begin{enumerate}
 	\item \textbf{DevConnScreen.kt} file contains the Composable function \texttt{DevConnScreen}, which defines the visual layout and user interface elements for the device connection screen. This file represents the \textbf{View} layer of \ac{MVVM} pattern.
@@ -512,10 +512,22 @@ The Device Configuration screen has the following functionality, as also seen on
 		\item \textbf{Set Dispense Schedule}: Enter a new dispense schedule string.
 		\item \textbf{Trigger Manual Dispense}: Command the ESP32 to perform a single dispense operation.
 \end{itemize}
-All these interactions need an activle Bluetooth connection to the device.
+All these interactions need an activle Bluetooth connection to the device. This view depends on these \ac{GATT} attributes to function:
+
+\textbf{Read Characteristics}:
+\begin{itemize}
+	\item \textbf{GattAttributes.CHAR\_GET\_DEVICE\_TIME\_UUID} to display the "Current Device Time."
+	\item \textbf{GattAttributes.CHAR\_GET\_DISPENSE\_SCHEDULE\_UUID} to display the "Current Dispense Schedule."
+\end{itemize}
+
+\textbf{Write Characteristics}
+\begin{itemize}
+	\item \textbf{GattAttributes.CHAR\_SET\_DEVICE\_TIME\_UUID} to send the new time string to the ESP32.
+	\item \textbf{GattAttributes.CHAR\_SET\_DISPENSE\_SCHEDULE\_UUID} to send the new schedule string to the ESP32.
+	\item \textbf{GattAttributes.CHAR\_TRIGGER\_MANUAL\_DISPENSE\_UUID} to command the ESP32 to dispense.
+\end{itemize}
 
 The files contributing to this view are \textbf{DevConfScreen.kt, DevConnViewModel.kt, BluetoothLeManager.kt, GattAttributes.kt, MainActivity.kt}. They serve the same purpose for this view as for the previous one. What differs the two views is the controller file, in this case \textbf{DevConfScreen.kt}. It is the file that defines the structure and functionality of this screen. Unlike \textbf{DevConnScreen} file, this one is much smaller, because \textbf{DevConnScreen} also serves as an initialiser for services, permissions etc. which is not present here. Essentially all the functionality is relegated to other files, classes and functions. This file only binds them together and lays down the structure of the \ac{UI}. as seen in block \ref{lst:DeviceConfigScreen}, This file contains a sole function called \texttt{DeviceConfigurationScreen} which takes \texttt{DevConnViewModel} ViewModel as an input parameter to fetch necessary data from the device.
-\newpage
 \begin{lstlisting}[
 	style=kotlinstyle,
 	caption={Top-level structure of the \texttt{DeviceConfigurationScreen.kt} file},
@@ -559,15 +571,26 @@ The files contributing to this view are \textbf{DevConfScreen.kt, DevConnViewMod
 \end{lstlisting}
 
 \subsubsection{Monitoring \&  Status}
-
-a. Device Status Display:
-i. Show basic status received from the dispenser:
-1. Connected/Disconnected
-2. Battery Level (ESP32 Function)
-3. Last dispensed time/status (Success/Failure) (Requires Sensor) (Sensor+T/C info)
-4. Current time on the dispenser (to check sync) T/C Info
-5. Time until next dispense T/C Info
-
-b. Dispense History/Log:
-i. Display a log of past dispense events. (Need to configure Logging storage on ESP32, last 30 due to small memory size)
-ii. Information per entry: Timestamp, Scheduled Time, Medication Name (if set), Status (e.g., Dispensed Successfully, Failed, Skipped). This is crucial for tracking adherence.
+The \textbf{MonitoringStatusScreen} is designed to provide a read-only view of various operational data and logs from the connected pill dispenser. It allows the user to:
+\begin{itemize}
+	\item \textbf{View Current Device Time}	
+	\item \textbf{View Current Dispense Schedule}
+	\item \textbf{View Last Dispense Information} Displays details about the most recent dispense event 
+	\item \textbf{View Time Until Next Dispense} Shows a countdown or status related to the next scheduled dispense (this is simulated/periodically updated by the ESP32 in \texttt{main.cpp} file on the Microcontroller side).
+	\item \textbf{View Dispense Log} Shows a raw log of dispense events (currently not implemented, but was designed during project development phase)
+	\item \textbf{Refresh Data} A button allows manually refreshing the "Last Dispense Info," 
+\end{itemize}
+This screen relies heavily on the ESP32 sending data (Timer/Counter information) via \ac{BLE} notifications. There are once again multiple files contributing to the functionality of this screen:
+\begin{itemize}
+	\item \textbf{DevMonitroingScreen.kt} defines the user interface for displaying monitoring information. Breaking the pattern, the main composable function is not the same as the name of the file, is called \texttt{MonitoringStatusScreen}. This is a minor oversight, which does not affect functionality of the code. It is the \textbf{View} layer of the \ac{MVVM} paradigm.
+	\item \textbf{DevConnViewModel.kt} like in other screens, it manages UI-related data for the monitoring screen, interacts with \texttt{BluetoothLeManager} to get this data, and exposes it as observable flows. It is the \textbf{ViewModel} layer of the \ac{MVVM} paradigm.
+	\item  \textbf{BluetoothLeManager.kt} here too, handles all \ac{BLE} communication. It is the \textbf{Model} layer of \ac{MVVM} paradigm.
+\end{itemize}
+For this screen to function, this View receives following \ac{GATT} characteristics:
+\begin{itemize}
+	\item \textbf{GattAttributes.CHAR\_GET\_DEVICE\_TIME\_UUID} to display "Device Time" 
+	\item \textbf{GattAttributes.CHAR\_GET\_DISPENSE\_SCHEDULE\_UUID} to display "Dispense Schedule". 
+	\item \textbf{GattAttributes.CHAR\_GET\_LAST\_DISPENSE\_INFO\_UUID} to display "Last Dispense Info". 
+	\item \textbf{GattAttributes.CHAR\_GET\_TIME\_UNTIL\_NEXT\_DISPENSE\_UUID} to display "Time Until Next Dispense". 
+	\item \textbf{GattAttributes.CHAR\_GET\_DISPENSE\_LOG\_UUID} to display "Dispense Log (Raw)". 
+\end{itemize}
