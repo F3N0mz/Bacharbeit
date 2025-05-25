@@ -25,7 +25,7 @@
 \usepackage{siunitx}
 \usepackage{csquotes}
 \usepackage[ngerman,english]{babel}
-\usepackage[backend=biber, style=ieee,language=english]{biblatex}	% for literature references, no compiler specified for now
+\usepackage[backend=biber, style=ieee, doi=false, url=true, eprint=true]{biblatex}	% for literature references, no compiler specified for now
 \addbibresource{Literature.bib}
 \usepackage{hyperref}
 \usepackage{booktabs}
@@ -91,9 +91,9 @@
 	\newpage
 	\input{Konstruktion3Ddruck}
 	\newpage
-	\input{FrontendSoftware}
-	\newpage
 	\input{BackendSoftware}
+	\newpage
+	\input{FrontendSoftware}
 	\newpage
 	\input{Discussion}
 	\newpage

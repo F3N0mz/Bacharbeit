@@ -107,7 +107,7 @@ Next, \texttt{MotorStatus motorLoop()}. The \texttt{MotorStatus} is a function o
 \end{itemize}
 Note that it is not a recursive loop, it doesn't call itself. This function is called from \texttt{void loop()} function of the \textbf{main.cpp} file.
 
-\begin{lstlisting}[style=cppstyle, caption={Header for Motor Control Interface}, label={lst:motorcontrolcpp}]
+\begin{lstlisting}[style=cppstyle, caption={Implementation of Motor Control Interface}, label={lst:motorcontrolcpp}]
 #include "motorcontrol.h"
 #include <Stepper.h>
 
@@ -171,9 +171,64 @@ MotorStatus motorLoop() {
 }
 
 \end{lstlisting}
+\subsection{Bluetooth Implementation}
+Similarly to stepper motor controls, Bluetooth controls have also been split into 2 files, \textbf{BTooth.h} and \textbf{BTooth.cpp}. the header file \textbf{BTooth.h} is quite small, as you can see in the code block \ref{lst:BToothh}, it only contains 8 lines, main body of which contains 3 prototype functions, which will be described when the implementation file, \textbf{BTooth.cpp} is covered.
+\begin{lstlisting}[style=cppstyle, caption={Header for Bluetooth implementation}, label={lst:BToothh}]
+#ifndef BTOOTH_H
+#define BTOOTH_H
 
-% Define MAC address
-% ---------------------------------------------------
+void bleSetup();
+void bleLoop();
+void bleNotifyDispenseComplete();
+
+#endif // BTOOTH_H
+\end{lstlisting}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Screenshot_19}
+	\caption[Generic Attribute Profile hierarchy.]{Generic Attribute Profile hierarchy shows the structure of service, characteristics and descriptors. Credit \cite{ble_primer_2024}}
+	\label{fig:screenshot19}
+\end{figure}
+
+Before doing so, the fundamentals of Bluetooth, and particularly \ac{BLE} must be covered. Bluetooth standard was initially covered under IEEE 802.15.1 Task group \cite{1016473}, which defined the physical layer and \ac{MAC} (layers 1 and 2 of the \ac{OSI} model, respectively) implementation of this communication protocol. Currently it is maintained by Bluetooth Special Interest Group (SIG), which has developed a \ac{BLE} extension protocol, which is used in this thesis. The functional principles of this protocol are thoroughly documented in the Bluetooth Low Energy Primer\cite{ble_primer_2024}. All definitions will be taken from this document, with additions on how they relate to this project. To cover the implementation of \ac{BLE} communication of device with an Android App, some definitions need to be established:
+\begin{itemize}
+	\item \textbf{Bluetooth Low Energy} is a wireless communication protocol designed for short-range communication with very low power consumption, making it ideal for battery-operated devices. 
+	\item \textbf{Central (Client)} is the device that initiates a connection and requests data. In this case, this is the Android App. Centrals scan for peripherals.
+	\item \textbf{Peripheral (Server)} is the device that advertises its presence and provides data. In this case, this is ESP32 Pill Dispenser. Peripherals wait for a central to connect.
+	\item \textbf{Advertising} is the process by which a peripheral broadcasts small packets of data to announce its presence, services, and device name. This allows centrals to discover it. 
+	\item \textbf{Scanning} is the process by which a central listens for advertising packets from peripherals.
+	\item \textbf{Connection} is he establishment of a link between a central and a peripheral after discovery through advertising and scanning.
+	\item \textbf{Device Name} is a human-readable name a device advertises, in this case it is "PillDispenserESP32".
+	\item \textbf{Device Address (MAC Address)} is a unique hardware identifier for a Bluetooth device.
+\end{itemize}
+The main unit of communication and crucial part of the protocols structure is the \ac{GATT} profile. While \ac{GATT} is part of \ac{BLE} protocol, it has many terms associated directly with it, as seen on image \ref{fig:screenshot19}. The associated terms are described as follows:
+\begin{itemize}
+	\item \textbf{Generic Attribute Profile} or \ac{GATT}, Defines high level data types known as services, characteristics and descriptors in terms of underlying attributes in the attribute table.
+	\item \textbf{Profile} Profile specifications define the roles that related devices (like the smartwatch and key fob) assume and in particular, define the behaviour of the client device and the data on the connected server that it should work with. In case of this thesis, a custom profile has been implemented, through the services and characteristics that have been defined.
+	\item \textbf{Service} A service specification defines a single service along with the characteristics and descriptors that it contains. The behaviours to be exhibited by the device hosting the service in response to various conditions and state data values are defined in the service specification.
+	\item \textbf{Characteristic} Characteristics are individual items of state data and have a type, an associated value and a set of properties which indicate how the data may be used in terms of sets of related GATT procedures.
+	\item \textbf{Value} The attribute value field is a byte array contain the attribute’s value. Interpretation of the byte array both in terms of data types and semantics is the concern of higher layers of the stack.
+	\item \textbf{Properties} Define what operations a client can perform on a characteristic's value (Read, Write, Write Without Response, Notify, Indicate). 
+	\item \textbf{UUID} all services, characteristics and descriptors have a \ac{UUID} which identifies the type of the service, characteristic or descriptor to which it relates rather than a particular instance on a particular device.
+	\item \textbf{Descriptor} Descriptors belong to some characteristics and can contain metadata like a textual description for the characteristic or might provide some means of controlling the behaviour of a characteristic. Characteristics have zero or more descriptors attached to them.
+	\item \textbf{CCCD} Any characteristic supporting notifications or indications must have a client characteristic configuration descriptor because its value (which clients may write to) controls whether or not notifications or indications are currently enabled or not.
+\end{itemize}
+Additionally, all \ac{BLE} Operations can be categorized in 3 groups:
+\begin{itemize}
+	\item \textbf{Read Operation} when the central requests the value of a characteristic from the peripheral
+	\item \textbf{Write Operation} when the central sends data to the peripheral to set the value of a characteristic
+	\item \textbf{Notification Subscription} when the central enables notifications on a characteristic (by writing to its \ac{CCCD}) to receive updates when its value changes.
+\end{itemize}
+
+Next, the actual implementation of \ac{BLE} interface shall be covered. The code block \ref{lst:BToothcpp1} provides the definition and initialization part.  Firstly, preprocessor directives to include other files: 
+\begin{itemize}
+	\item \texttt{BTooth.h} is the header file for this file;
+	\item \texttt{motorcontrol.h} used for manual dispense;
+	\item \texttt{Arduino.h} used extensively for many tasks such as \texttt{Serial.println()}
+	\item \texttt{NimBLEDevice.h} is is the header for the NimBLE Arduino library, which provides Bluetooth Low Energy (BLE) functionality for ESP32;
+	\texttt{Preferences.h} provides an easy way to use the ESP32's non-volatile storage to save data that persists even after the ESP32 is restarted or powered off
+\end{itemize}
+After that, Service and Characteristic \ac{UUID}s are declared. Their values are not as relevant as long as they are unique and existing. What is relevant, however, is what purpose they serve. This is important because \ac{BLE} protocol has limited capacity for these \ac{UUID}s, which can lead to issues, such as Android App failing to fetch all characteristics. The implemented characteristics serve this purpose:
 \begin{description}[style=nextline] % label on its own line
 	% ------------ WRITABLE -------------
 	\item[\textbf{Writable}]%
@@ -194,15 +249,44 @@ MotorStatus motorLoop() {
 		\item \texttt{Get\_Time\_Until\_Next\_Dispense} — countdown to the next dose.
 		\item \texttt{Get\_Dispense\_Log} — full dispense history.
 	\end{itemize}
-	
-	% --------- NOTIFY / INDICATE -------
-	\item[\textbf{Notify/Indicate}]%
-	\leavevmode\\[-0.8\baselineskip]
-	\begin{itemize}
-		\item \texttt{Notify\_Dispense\_Event} — real-time success/failure updates with timestamps.
-		\item \texttt{Notify\_Schedule\_Change\_Confirmation} (optional) — acknowledgement of schedule edits.
-	\end{itemize}
 \end{description}
+As seen in the code block \ref{lst:BToothcpp1}, there is a naming convention in place. For \ac{UUID}s it is \texttt{CHAR"\_CHARACTERISTIC\_PURPOSE"\_UUID} except for \texttt{SERVICE\_UUID} which is a service and not a characteristic, therefore it doesn't have \texttt{CHAR} prefix. The pointers to these characteristics are initialized as null-pointers i.e. without an address. \texttt{Static} means that they can be accessed anywhere within this file, but cannot be accessed from without. The naming convention for pointers is \texttt{p"CharacteristicPurpose"Characteristic}.
+\begin{lstlisting}[style=cppstyle, caption={Preprocessor directives and definitions in the \texttt{BTooth.cpp} file}, label={lst:BToothcpp1}]
+#include "BTooth.h"
+#include "motorcontrol.h"
+
+#include <Arduino.h>
+#include <NimBLEDevice.h>
+#include <Preferences.h>
+
+// BLE Service + Characteristic UUIDs 
+#define SERVICE_UUID                           "03339647-3f4e-43df-abff-fac54287cf1a"
+#define CHAR_SET_DEVICE_TIME_UUID              "65232f1d-618a-4268-9050-0548142a4536"
+#define CHAR_SET_DISPENSE_SCHEDULE_UUID        "999c584e-06c0-49a1-995a-66b7c802ac1b"
+#define CHAR_TRIGGER_MANUAL_DISPENSE_UUID      "36bb95f2-e57e-4db9-b9aa-fb6541ee784e"
+#define CHAR_GET_DEVICE_TIME_UUID              "272ee276-e37e-4d78-8c5e-bb7225d35074"
+#define CHAR_GET_DISPENSE_SCHEDULE_UUID        "b53c2ed4-ae26-476d-8414-011a025dddfc"
+#define CHAR_GET_LAST_DISPENSE_INFO_UUID       "40d3b5d8-5480-4b7b-a115-5fe86bf17d7d"
+#define CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID "4b14acc4-768a-43e1-9d6c-0d97307e2666"
+#define CHAR_GET_DISPENSE_LOG_UUID             "6f182da7-c5a8-40ab-a637-f97ed6b5777b"
+
+static NimBLECharacteristic *pSetDeviceTimeCharacteristic         = nullptr;
+static NimBLECharacteristic *pSetDispenseScheduleCharacteristic    = nullptr;
+static NimBLECharacteristic *pTriggerManualDispenseCharacteristic = nullptr;
+static NimBLECharacteristic *pGetDeviceTimeCharacteristic          = nullptr;
+static NimBLECharacteristic *pGetDispenseScheduleCharacteristic    = nullptr;
+static NimBLECharacteristic *pGetLastDispenseInfoCharacteristic    = nullptr;
+static NimBLECharacteristic *pGetTimeUntilNextDispenseCharacteristic = nullptr;
+static NimBLECharacteristic *pGetDispenseLogCharacteristic         = nullptr;
+
+static Preferences preferences;
+
+static bool deviceConnected    = false;
+static bool oldDeviceConnected = false;
+\end{lstlisting}
+
+% ---------------------------------------------------
+
 
 \subsection{Important Functions}
 \subsection{Backend-Frontend Integration}
