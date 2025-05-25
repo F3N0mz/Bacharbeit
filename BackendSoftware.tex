@@ -1,7 +1,177 @@
 \section{Microcontroller Programming}\label{sec:Backenddev}
-\textbf{Note}: For the programming, all the source code is available under authors Github Repository here \cite{Github_src}
+\textbf{Note}: For programming part, all the source code is available under authors Github Repository here \cite{Github_src}. Code for this section to be found in the \textbf{ESP32/Pillspender} folder of the repository.
 
-As mentioned before, the microcontroller of choice is an ESP32 S3 DevKitC-1 N16R8 \cite{microcontroller}. This microcontroller has 16MB Octal \ac{SPI} flash memory and 8MB of \ac{PSRAM}. It supports Arduino framework, which makes it easier to program, compared to many libraries published by the developers (such as Espressif's own ESP-IDF) as it abstracts away some low-level programming through helper libraries (such as \texttt{stepper.h} for charging/discharging of motor coils). 
+As mentioned before, the microcontroller of choice is an ESP32 S3 DevKitC-1 N16R8 \cite{microcontroller}. This microcontroller has 16MB Octal \ac{SPI} flash memory and 8MB of \ac{PSRAM}. It supports Arduino framework, which makes it easier to program, compared to many libraries published by the developers (such as Espressif's own ESP-IDF) as it abstracts away some low-level programming through helper libraries (such as \texttt{stepper.h} for charging/discharging of motor coils). The code consists of 2 separate parts: The first part is responsible for communication with stepper motor. It means that it covers all the functions required for stepper motor to rotate a necessary amount of steps to move the next chamber into position. The second part is responsible for \ac{BLE} interface and establishing the device as a \ac{BLE} host.
+
+The \textbf{main.cpp} file is rather minimal because the code was semantically split also in \textbf{\ac{BLE}} and \textbf{Motor Control} parts. Here is a short overview of the contents of main.cpp file:
+\begin{lstlisting}[style=cppstyle, caption={Main Arduino Loop Code}, label={lst:mainLoop}]
+	#include <Arduino.h>
+	#include "motorcontrol.h"
+	#include "BTooth.h"
+	
+	void setup() {
+		Serial.begin(115200);
+		
+		motorSetup();     // stepper + pins
+		bleSetup();       // BLE GATT server
+	}
+	
+	void loop() {
+		bleLoop();
+		MotorStatus motorStatus = motorLoop(); // Call motorLoop and get its status
+		if (motorStatus == MOTOR_JUST_COMPLETED) {
+			bleNotifyDispenseComplete(); 
+		}
+		delay(10);
+	}
+\end{lstlisting}
+As seen in the code block \ref{lst:mainLoop}, \textbf{main.cpp} file includes 3 libraries, 2 of which are custom (\texttt{motorcontrol.h} and \texttt{BTooth.h}) and one is a built-in \texttt{Arduino.h} library. Specifics of Arduino microcontroller programming is that main body is divided into \texttt{setup()} and \texttt{loop()} functions, unlike standard C/C++ file where only \texttt{int main()} exists. Effectively, this is the same thing as C code having a \texttt{while(TRUE)} loop inside the \texttt{main()} function.
+\subsection{Stepper motor controls}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Screenshot_18}
+	\caption[Stepper Motor Control Logic]{The flow chart of stepper motor control logic within the \texttt{motorLoop()} function. This function is called repeatedly within \texttt{loop()} function of the \textbf{main.cpp} file.}
+	\label{fig:screenshot18}
+\end{figure}
+
+Controls of a stepper motor are handled by 2 files: \textbf{motorcontrol.cpp}, which contains the implementation itself, and \textbf{motorcontrol.h}, which contains public interface of the motor control module. The motor control implementation is split into 2 (.cpp and .h) files is not only a stylistic choice (splitting declaration action from definition action) but also positively affects code readability, compilation time and prevents accidental redefinition of functions. For example this code block \ref{lst:motorcontrolh} shows the contents of the \textbf{motorcontrol.h} file. The first 2 lines (\texttt{\#ifndef...\#define...}) exist as a preprocessor check (or include guard, a term often used in the industry), they ensure that the declarations within this header file are processed only once per compilation. If \texttt{MOTORCONTROL\_H} has not been defined during the compilation of a particular .cpp file, the preprocessor includes the subsequent lines. These lines contain the declarations for other parts of the program to interact with the motor control module, such as function prototypes (e.g., \texttt{void motorSetup()}), enumeration definitions (\texttt{enum MotorStatus}), and external variable declarations (\texttt{extern const int OneChamber}). The actual implementations (definitions) for these prototyped functions are in the corresponding \texttt{motorcontrol.cpp} file, which is compiled separately and later linked with machine code generated from other files.
+
+\begin{lstlisting}[style=cppstyle, caption={Header for Motor Control Interface}, label={lst:motorcontrolh}]
+	#ifndef MOTORCONTROL_H
+	#define MOTORCONTROL_H
+	
+	#include <Arduino.h>
+	
+	extern const int OneChamber;          // 1/8 revolution, exported for BLE layer
+	enum MotorStatus { MOTOR_IDLE, MOTOR_RUNNING, MOTOR_JUST_COMPLETED };
+	void motorSetup();                    // call once from setup()
+	bool motorStartDispense(int numSteps); // returns true if motor accepted the job
+	
+	MotorStatus motorLoop();
+	// ...
+	
+	#endif // MOTORCONTROL_H
+\end{lstlisting}
+Having covered the structure of the files responsible for handling motor controls, it is time to look at an actual implementation within the \textbf{motorcontrol.cpp} file, as seen in this code block \ref{lst:motorcontrolcpp}. The file begins with inclusion of libraries. \texttt{motorcontrol.h} is the accompanying header file containing function prototypes, \texttt{Stepper.h} library is a built-in Arduino library for high-level stepper motor control. 
+
+After libraries come 2 \textit{const} variables needed to calculate rotation (code block \ref{lst:motorcontrolcpp}, lines 4 and 5). According to the 28BYJ-48 documentation \cite{stepper}, it has Speed Variation Ratio 1/64 and Stride Angle 5.625deg /64 (it is usually denoted for half-step mode, so full-step mode would be 1/32), which essentially means that inside this motor, there is an internal gear connected to an external gear that rotates the shaft, connected with a 1-to-64 gear reduction, but the internal gear also steps 1/64th of a rotation each time coil polarisation changes. It means that total amount of steps for the full rotation of the shaft is 64*64=4096 , which gives us the value for the \texttt{const int stepsPerRevolution = 2048;}. To calculate \texttt{const int OneChamber = stepsPerRevolution / 8;}, gear ratio of designed device should be taken into consideration. As mentioned in the previous section, the inner ring of the Mill contains 88 teeth, while gear that is attached to the stepper motor has 32 teeth. Since there are 22 Chambers in total, each chamber corresponds to exactly 4 teeth of rotation (teeth are equal for both motor and Mill gears). 
+
+Next is the definition of the pins that are attached to the wires that drive the stepper motor (lines 7 to 10) and then (line 12) \texttt{Stepper} class of the \texttt{Stepper.h} library. It takes as an input amount of steps and energizing leads. After the class, helper variables are declared. They serve utility functions such as state change in the code. We will review their purpose when they appear in functions. 
+
+After establishing the structure, the functions are declared:
+\begin{itemize}
+	\item \textbf{deenergizeStepper()} function that depowers wires when they are not in use, since methods of the \texttt{Stepper} class don't do that. It is an important function for saving energy, as constant current to the coils will drain battery charge very fast.
+	\item \textbf{motorSetup()} function initializes the motor. Since it only takes speed as an input, there is not much else to initialize, but it also has output lines to check whether operation has been correctly done.
+	\item \textbf{motorStartDispense(int numSteps)}  function serves as the primary interface to initiate a motor rotation. It rotates the Pill Dispenser exactly one chamber. It has a precondition \texttt{if (!isStepping)}: it will not do anything if motor is already in process of rotating. It takes an integer \texttt{numSteps} as input, specifying how many steps the motor should turn. 
+\end{itemize}
+Next, \texttt{MotorStatus motorLoop()}. The \texttt{MotorStatus} is a function of an \textit{enum} type, which means it can only a predetermined set of values. It which serves the purpose of state-selector. It is defined in the \textbf{motorcontrol.h} file (seen here: \ref{lst:motorcontrolh}, on line 7). The logic for state-change is defined in the \texttt{motorLoop()} variable. Graphically, the controlling logic can be seen on image \ref{fig:screenshot18}. The loop works as follows:
+
+\begin{itemize}
+	\item \textbf{Top-level availability test}\\
+	The \texttt{if (isStepping)} decides whether the motor currently has
+	work to do.  
+	\begin{itemize}
+		\item \texttt{false} $\Rightarrow$ return
+		\texttt{MOTOR\_IDLE}.
+		\item \texttt{true}  $\Rightarrow$ proceed to timing check.
+	\end{itemize}
+	
+	\item \textbf{Timing check}\\
+	Evaluate \texttt{millis() - lastStepTime \(\ge\) stepInterval}.
+	\begin{itemize}
+		\item \texttt{false} (interval not yet elapsed)  
+		$\Rightarrow$ return \texttt{MOTOR\_RUNNING} to signal
+		the dispense is ongoing but no step is taken in this
+		call.
+		\item \texttt{true}  (interval elapsed) $\Rightarrow$
+		readiness for a potential step.
+	\end{itemize}
+	
+	\item \textbf{Step-or-finish decision}\\
+	Check \texttt{stepsRemaining > 0}.
+	\begin{itemize}
+		\item \texttt{stepsRemaining > 0}:  
+		\begin{itemize}
+			\item execute \texttt{myStepper.step(1)};
+			\item decrement \texttt{stepsRemaining};
+			\item update \texttt{lastStepTime};
+			\item return \texttt{MOTOR\_RUNNING}.
+		\end{itemize}
+		\item \texttt{stepsRemaining \(\le\) 0}:  
+		\begin{itemize}
+			\item set \texttt{isStepping} to \texttt{false};
+			\item call \texttt{deenergizeStepper()};
+			\item return \texttt{MOTOR\_JUST\_COMPLETED}.
+		\end{itemize}
+	\end{itemize}
+\end{itemize}
+Note that it is not a recursive loop, it doesn't call itself. This function is called from \texttt{void loop()} function of the \textbf{main.cpp} file.
+
+\begin{lstlisting}[style=cppstyle, caption={Header for Motor Control Interface}, label={lst:motorcontrolcpp}]
+#include "motorcontrol.h"
+#include <Stepper.h>
+
+const int stepsPerRevolution = 4096;
+const int OneChamber          = stepsPerRevolution / 8;
+
+const int in1Pin = 4;
+const int in2Pin = 5;
+const int in3Pin = 6;
+const int in4Pin = 7;
+
+static Stepper myStepper(stepsPerRevolution, in1Pin, in2Pin, in3Pin, in4Pin);
+
+static bool          isStepping     = false;
+static int           stepsRemaining = 0;
+static unsigned long lastStepTime   = 0;
+static const unsigned long stepInterval = 2; // ms
+
+static void deenergizeStepper() {
+	digitalWrite(in1Pin, LOW);
+	digitalWrite(in2Pin, LOW);
+	digitalWrite(in3Pin, LOW);
+	digitalWrite(in4Pin, LOW);
+	Serial.println("Stepper coils de-energized.");
+}
+
+void motorSetup() {
+	Serial.println("Initializing Stepper Motor...");
+	myStepper.setSpeed(10);
+	Serial.println("Stepper Motor Initialized.");
+}
+
+bool motorStartDispense(int numSteps) {
+	if (!isStepping) {
+		Serial.printf("Starting dispense of %d steps.\n", numSteps);
+		stepsRemaining = numSteps;
+		isStepping    = true;
+		return true;
+	}
+	return false;
+}
+
+MotorStatus motorLoop() {
+	if (isStepping) {
+		if (millis() - lastStepTime >= stepInterval) {
+			if (stepsRemaining > 0) {
+				myStepper.step(1);
+				stepsRemaining--;
+				lastStepTime = millis();
+				return MOTOR_RUNNING;
+			} else {
+				isStepping = false;
+				deenergizeStepper();
+				Serial.println("Dispense complete.");
+				return MOTOR_JUST_COMPLETED; // Signal completion
+			}
+		}
+		return MOTOR_RUNNING; // Still stepping or waiting for interval
+	}
+	return MOTOR_IDLE; // Not stepping
+}
+
+\end{lstlisting}
+
 % Define MAC address
 % ---------------------------------------------------
 \begin{description}[style=nextline] % label on its own line

@@ -8,6 +8,14 @@
 \definecolor{stringcolor}{rgb}{0.58, 0.0, 0.82}     % purple
 \definecolor{bgcolor}{rgb}{1, 1, 1}                 % white background
 \definecolor{identifiercolor}{rgb}{0.2, 0.2, 0.2}   % dark gray
+\definecolor{darkred}{RGB}{163, 21, 21}
+\definecolor{gray}{RGB}{128, 128, 128}
+\definecolor{blue}{RGB}{0, 0, 255}
+\definecolor{vscBlue}{RGB}{0, 0, 205}         % keywords
+\definecolor{vscDarkCyan}{RGB}{0, 128, 128}   % functions
+\definecolor{vscGray}{RGB}{100, 100, 100}     % comments
+\definecolor{vscString}{RGB}{163, 21, 21}     % strings
+\definecolor{vscNumber}{RGB}{0, 128, 0}       % numeric constants
 
 \lstset{%
 	basicstyle=\color{darkgray}\ttfamily\footnotesize, % font style and size
@@ -69,3 +77,27 @@
 	framexleftmargin= 1.5em
 }
 
+
+
+\lstdefinestyle{cppstyle}{
+	language=C++,
+	backgroundcolor=\color{white},
+	basicstyle=\ttfamily\footnotesize,
+	keywordstyle=\color{vscBlue}\bfseries,
+	commentstyle=\color{vscGray}\itshape,
+	stringstyle=\color{vscString},
+	numberstyle=\tiny\color{gray},
+	numbers=left,
+	stepnumber=1,
+	numbersep=10pt,
+	showstringspaces=false,
+	tabsize=4,
+	breaklines=true,
+	breakatwhitespace=true,
+	captionpos=b,
+	morekeywords={MotorStatus, setup, loop},
+	emph={Serial, motorSetup, bleSetup, bleLoop, motorLoop, bleNotifyDispenseComplete},
+	emphstyle=\color{vscDarkCyan}
+}
+
+% Custom colors (VSCode-style)
