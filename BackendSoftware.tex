@@ -171,7 +171,7 @@ MotorStatus motorLoop() {
 }
 
 \end{lstlisting}
-\subsection{Bluetooth Implementation}
+\subsection{Bluetooth Controls}
 Similarly to stepper motor controls, Bluetooth controls have also been split into 2 files, \textbf{BTooth.h} and \textbf{BTooth.cpp}. the header file \textbf{BTooth.h} is quite small, as you can see in the code block \ref{lst:BToothh}, it only contains 8 lines, main body of which contains 3 prototype functions, which will be described when the implementation file, \textbf{BTooth.cpp} is covered.
 \begin{lstlisting}[style=cppstyle, caption={Header for Bluetooth implementation}, label={lst:BToothh}]
 #ifndef BTOOTH_H
@@ -219,16 +219,16 @@ Additionally, all \ac{BLE} Operations can be categorized in 3 groups:
 	\item \textbf{Write Operation} when the central sends data to the peripheral to set the value of a characteristic
 	\item \textbf{Notification Subscription} when the central enables notifications on a characteristic (by writing to its \ac{CCCD}) to receive updates when its value changes.
 \end{itemize}
-
+\subsubsection{Implementation of Bluetooth Protocol}
 Next, the actual implementation of \ac{BLE} interface shall be covered. The code block \ref{lst:BToothcpp1} provides the definition and initialization part.  Firstly, preprocessor directives to include other files: 
 \begin{itemize}
 	\item \texttt{BTooth.h} is the header file for this file;
-	\item \texttt{motorcontrol.h} used for manual dispense;
-	\item \texttt{Arduino.h} used extensively for many tasks such as \texttt{Serial.println()}
+	\item \texttt{motorcontrol.h} is used for manual dispense;
+	\item \texttt{Arduino.h} is used extensively for many tasks such as \texttt{Serial.println()}
 	\item \texttt{NimBLEDevice.h} is is the header for the NimBLE Arduino library, which provides Bluetooth Low Energy (BLE) functionality for ESP32;
-	\texttt{Preferences.h} provides an easy way to use the ESP32's non-volatile storage to save data that persists even after the ESP32 is restarted or powered off
+	\item \texttt{Preferences.h} provides an easy way to use the ESP32's non-volatile storage to save data that persists even after the ESP32 is restarted or powered off
 \end{itemize}
-After that, Service and Characteristic \ac{UUID}s are declared. Their values are not as relevant as long as they are unique and existing. What is relevant, however, is what purpose they serve. This is important because \ac{BLE} protocol has limited capacity for these \ac{UUID}s, which can lead to issues, such as Android App failing to fetch all characteristics. The implemented characteristics serve this purpose:
+After that, Service and Characteristic \ac{UUID}s are declared. Their exact values are not as relevant as long as they are unique and existing. What is relevant, however, is what purpose they serve. This is important because \ac{BLE} protocol has limited capacity for these \ac{UUID}s, which can lead to issues, such as Android App failing to fetch all characteristics. The implemented characteristics serve this purpose:
 \begin{description}[style=nextline] % label on its own line
 	% ------------ WRITABLE -------------
 	\item[\textbf{Writable}]%
@@ -250,7 +250,7 @@ After that, Service and Characteristic \ac{UUID}s are declared. Their values are
 		\item \texttt{Get\_Dispense\_Log} — full dispense history.
 	\end{itemize}
 \end{description}
-As seen in the code block \ref{lst:BToothcpp1}, there is a naming convention in place. For \ac{UUID}s it is \texttt{CHAR"\_CHARACTERISTIC\_PURPOSE"\_UUID} except for \texttt{SERVICE\_UUID} which is a service and not a characteristic, therefore it doesn't have \texttt{CHAR} prefix. The pointers to these characteristics are initialized as null-pointers i.e. without an address. \texttt{Static} means that they can be accessed anywhere within this file, but cannot be accessed from without. The naming convention for pointers is \texttt{p"CharacteristicPurpose"Characteristic}.
+As seen in the code block \ref{lst:BToothcpp1}, there is a naming convention in place. For \ac{UUID}s it is \texttt{CHAR"\_CHARACTERISTIC\_PURPOSE"\_UUID} except for \texttt{SERVICE\_UUID} which is a service and not a characteristic, therefore it doesn't have \texttt{CHAR} prefix. The pointers to these characteristics are initialized as null-pointers i.e. without an address, as not doing so will make them point to random areas of memory, causing unpredictable behavior. \texttt{Static} means that they can be accessed anywhere within this file, but cannot be accessed from without. The naming convention for pointers is \texttt{p"CharacteristicPurpose"Characteristic}. Next, \texttt{static Preferences preferences;} class is declared to manipulate static memory and finally a \texttt{static bool deviceConnected = false} boolean(can have values either 'true' or 'false') variable is initialized to track the connection status.
 \begin{lstlisting}[style=cppstyle, caption={Preprocessor directives and definitions in the \texttt{BTooth.cpp} file}, label={lst:BToothcpp1}]
 #include "BTooth.h"
 #include "motorcontrol.h"
@@ -282,11 +282,140 @@ static NimBLECharacteristic *pGetDispenseLogCharacteristic         = nullptr;
 static Preferences preferences;
 
 static bool deviceConnected    = false;
-static bool oldDeviceConnected = false;
+\end{lstlisting}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.9\linewidth]{Figures/Screenshot_20}
+	\caption[Flowchart of the onWrite method of MyCharacteristicCallbacks class]{Flowchart of the onWrite method of MyCharacteristicCallbacks class shows the logic under which this method operates. Notify means that whoever was subscribed to updates to a certain Characteristic will get a signal that the value has changed.}
+	\label{fig:screenshot20}
+\end{figure}
+
+The next part, the \texttt{ \textbf{MyCharacteristicCallbacks} } class is a crucial part of the functionality of the code. It determines what actions should be taken when there is a write command coming from the \ac{BLE} client. This code block \ref{lst:callbacks} contains the implementation of \texttt{MyCharacteristicCallbacks} class. This class works like this: it is inherited from the base \texttt{NimBLECharacteristicCallbacks} class, which contains functions for various characteristic events (such as read, write, notify subscription changes). Inside this class, there is a single \texttt{'onWrite(NimBLECharacteristic *pCharacteristic) override'} method, which overrides (essentially redefines what this method does) the built-in method from base class. It takes as an input \texttt{pCharacteristic}, a pointer to the \texttt{NimBLECharacteristic} type object that received write request, which determines which characteristic and what value was written. This method takes this input object, which contains \ac{UUID} and Value, and converts them to string (lines 3 and 4). Then it goes through a list of writable characteristics and compares their \ac{UUID}s to the value it got from the input to what exactly needs to be done. A good analogy to this would be a mailman distributing letters. The letters have content which only the correct receiver correctly interprets and acts upon. In this analogy, a mailman is the method \texttt{onWrite}, receivers are \ac{UUID}s and letters themselves are values. When the correct recipient is found the tasks are done according to who received it:
+\begin{itemize}
+	\item \textbf{CHAR\_SET\_DEVICE\_TIME\_UUID} Sets device time to that of the value of received data and notifies subscribers that value has changed.
+	\item \textbf{CHAR\_SET\_DISPENSE\_SCHEDULE\_UUID} Sets the scedule to that of the value and save is to \ac{NVS}. Notifies subscribers that value has changed.
+	\item \textbf{CHAR\_TRIGGER\_MANUAL\_DISPENSE\_UUID} checks the current state of the motor, if it is available for the job, commands it to rotate 1 chamber.
+\end{itemize}
+\begin{lstlisting}[style=cppstyle, caption={MyCharacteristicCallbacks class responsible for handling write commands from the server}, label={lst:callbacks}]
+class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+	void onWrite(NimBLECharacteristic *pCharacteristic) override {
+		std::string uuid_str  = pCharacteristic->getUUID().toString();
+		std::string value_str = pCharacteristic->getValue();
+		
+		if (uuid_str == CHAR_SET_DEVICE_TIME_UUID) {
+			preferences.putString("devTime", value_str.c_str());
+			if (pGetDeviceTimeCharacteristic) {
+				pGetDeviceTimeCharacteristic->setValue("Time Set ACK: " + value_str);
+				pGetDeviceTimeCharacteristic->notify();
+			}
+		} else if (uuid_str == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
+			preferences.putString("schedule", value_str.c_str());
+			if (pGetDispenseScheduleCharacteristic) {
+				pGetDispenseScheduleCharacteristic->setValue(value_str);
+				pGetDispenseScheduleCharacteristic->notify();
+			}
+		} else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
+			// Attempt to start the motor; returns false if busy
+			if (motorStartDispense(OneChamber)) {
+				if (pGetLastDispenseInfoCharacteristic) {
+					unsigned long now = millis();
+					String msg = "Dispensing... Started at: " + String(now);
+					pGetLastDispenseInfoCharacteristic->setValue(msg.c_str());
+					pGetLastDispenseInfoCharacteristic->notify();
+					preferences.putString("lastDisp", msg.c_str());
+				}
+			} else {
+				if (pGetLastDispenseInfoCharacteristic) {
+					pGetLastDispenseInfoCharacteristic->setValue("Dispense command ignored: busy");
+					pGetLastDispenseInfoCharacteristic->notify();
+				}
+			}
+		}
+	}
+};
 \end{lstlisting}
 
+The \texttt{\textbf{MyServerCallbacks}} class is very simple in implementation and handles connection and disconnection of the device. As seen in code block \ref{lst:discallbacks}, this class inherits from \texttt{NimBLEServerCallbacks} and overrides \texttt{onConnect} and \texttt{onDisconnect} methods. When device connects, it sets \texttt{deviceConnected} flag to 'true', meaning that it has connected. When device disconnects, it sets this flag to 'false' and starts advertising.
+\begin{lstlisting}[style=cppstyle, caption={MyServerCallbacks class responsible for device connect/disconnect}, label={lst:discallbacks}]
+class MyServerCallbacks : public NimBLEServerCallbacks {
+	void onConnect(NimBLEServer*) override { deviceConnected = true; }
+	void onDisconnect(NimBLEServer*) override {
+		deviceConnected = false;
+		NimBLEDevice::startAdvertising();
+	}
+};
+\end{lstlisting}
+The function \texttt{\textbf{bleNotifyDispenseComplete()}} is designed to perform two main tasks when a dispensing operation has just finished: to inform the connected client that dispense is complete. Then, to store this completion information on the ESP32 \ac{NVS}. As seen in the code block \ref{lst:dispcomplete},
+
+\begin{lstlisting}[style=cppstyle, caption={bleNotifyDispenseComplete function responsible for information logging}, label={lst:dispcomplete}]
+void bleNotifyDispenseComplete() {
+	if(pGetLastDispenseInfoCharacteristic) {
+		unsigned long completeTime = millis();
+		String completionMessage = "Dispense complete. Finished at: " + String(completeTime);
+		pGetLastDispenseInfoCharacteristic->setValue(completionMessage.c_str());
+		pGetLastDispenseInfoCharacteristic->notify();
+		preferences.putString("lastDisp", completionMessage.c_str());
+		Serial.println("BTooth: Last dispense info (complete) saved to NVS.");
+	}
+}
+\end{lstlisting}
+
+Next, comes the \texttt{\textbf{bleSetup()}} function. This is a critical function that is responsible for initializing and configuring everything related to \ac{BLE} communication for the device. As seen in the code block \ref{lst:bleSetup}, first, it initializes the \texttt{Preferences} library (line 2) which is responsible for writing to the \ac{NVS}, then it initializes the NimBLE stack (line 4), setting the name of the device for advertising. Next, it creates a \ac{GATT} server instance (line 5) and assigns a callback handler to the server, which handles connection and disconnection of device. Then, it creates \ac{BLE} service within this server(line 8) with the service \ac{UUID} already predefined. After that, it starts creating characteristics. Characteristic creation follows a pattern: each characteristic is created in 3 steps:
+\begin{itemize}
+	\item \textbf{\texttt{pSetDeviceTimeCharacteristic = pService->createCharacteristic}} associates a characteristic with previously created service, establishing a hierarchy(characteristic is subordinate to service). As an input parameters, \texttt{createCharacteristic} function takes \ac{UUID} and \ac{BLE} properties (such as read, write, notify etc.)
+	\item \textbf{\texttt{pSetDeviceTimeCharacteristic->setCallbacks(new MyCharacteristicCallbacks());}} is for characteristics with 'WRITE' property assigned to them. It assigns the \texttt{MyCharacteristicCallbacks} handler. The \texttt{onWrite} method in this class will be called when a client writes a value to this characteristic.
+	\item \texttt{\textbf{pGetDispenseScheduleCharacteristic->setValue()}} is for  characteristics with 'READ' or 'NOTIFY' properties assigned to them. It assigns the default value to them.
+\end{itemize}
+\texttt{\textbf{loadedTime, loadedSchedule}} and \textbf{\texttt{lastDispense}} strings are used to retrieve saved values from \ac{NVS}.
+After defining all characteristics within the service, \texttt{bleSetup} function starts the service to make it and its characteristics active and accessible over \ac{BLE}(line 24). Finally it set-ups advertising: includes main service \ac{UUID} to the advertisement, enables scan response and switches on advertising broadcast.
 % ---------------------------------------------------
 
+\begin{lstlisting}[style=cppstyle, caption={bleSetup() function responsible for initializing the BLE stack}, label={lst:bleSetup}]
+	void bleSetup() {
+		preferences.begin("pilldisp", false);
+		
+		NimBLEDevice::init("PillDispenserESP32");
+		NimBLEServer *pServer = NimBLEDevice::createServer();
+		pServer->setCallbacks(new MyServerCallbacks());
+		
+		NimBLEService *pService = pServer->createService(SERVICE_UUID);
+		
+		pSetDeviceTimeCharacteristic = pService->createCharacteristic(
+		CHAR_SET_DEVICE_TIME_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
+		pSetDeviceTimeCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+		
+		pGetTimeUntilNextDispenseCharacteristic = pService->createCharacteristic(
+		CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+		pGetTimeUntilNextDispenseCharacteristic->setValue("Next Dispense: Unknown");
+		. . .		
+		// Restore persisted values -----------------------------
+		String loadedTime = preferences.getString("devTime", "Device Time: Not Set");
+		pGetDeviceTimeCharacteristic->setValue(loadedTime.c_str());
+		
+		String loadedSchedule = preferences.getString("schedule", "Schedule: Empty");
+		pGetDispenseScheduleCharacteristic->setValue(loadedSchedule.c_str());
+		
+		String lastDispense = preferences.getString("lastDisp", "Last Dispense: None");
+		pGetLastDispenseInfoCharacteristic->setValue(lastDispense.c_str());
+		
+		pService->start();
+		
+		NimBLEAdvertising *pAdvertising = NimBLEDevice::getAdvertising();
+		pAdvertising->addServiceUUID(SERVICE_UUID);
+		pAdvertising->setScanResponse(true);
+		NimBLEDevice::startAdvertising();
+	}
+\end{lstlisting}
 
-\subsection{Important Functions}
-\subsection{Backend-Frontend Integration}
+The final part of the Bluetooth implementation file is the \textbf{\texttt{bleLoop()}} function
+\begin{lstlisting}[style=cppstyle, caption={bleSetup() function responsible for initializing the BLE stack}, label={lst:bleSetup}]
+void bleLoop() {
+	static unsigned long lastUpdateTime = 0;
+	if (deviceConnected && (millis() - lastUpdateTime > 5000)) {
+		lastUpdateTime = millis();
+		String timeVal = "Next: " + String(millis() / 1000) + "s (simulated)";
+		pGetTimeUntilNextDispenseCharacteristic->setValue(timeVal.c_str());
+		pGetTimeUntilNextDispenseCharacteristic->notify();
+	}
+}
+\end{lstlisting}
