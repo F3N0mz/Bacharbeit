@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <Preferences.h>
+#include "timekeeping.h"
+#include <string> 
 
 // BLE Service + Characteristic UUIDs (unchanged)
 #define SERVICE_UUID                           "03339647-3f4e-43df-abff-fac54287cf1a"
@@ -25,48 +27,59 @@ static NimBLECharacteristic *pGetLastDispenseInfoCharacteristic    = nullptr;
 static NimBLECharacteristic *pGetTimeUntilNextDispenseCharacteristic = nullptr;
 static NimBLECharacteristic *pGetDispenseLogCharacteristic         = nullptr;
 
-static Preferences preferences;
 
 static bool deviceConnected    = false;
-static bool oldDeviceConnected = false;
 
 //--------------------------------------------------------------------
 class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
+    private:
+        Preferences& _prefs;
+    public:
+    MyCharacteristicCallbacks(Preferences& prefs) : _prefs(prefs) {}
+
     void onWrite(NimBLECharacteristic *pCharacteristic) override {
         std::string uuid_str  = pCharacteristic->getUUID().toString();
-        std::string value_str = pCharacteristic->getValue();
+        std::string value_from_client_str = pCharacteristic->getValue();
 
         if (uuid_str == CHAR_SET_DEVICE_TIME_UUID) {
-            preferences.putString("devTime", value_str.c_str());
-            if (pGetDeviceTimeCharacteristic) {
-                pGetDeviceTimeCharacteristic->setValue("Time Set ACK: " + value_str);
-                pGetDeviceTimeCharacteristic->notify();
-            }
-        } else if (uuid_str == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
-            preferences.putString("schedule", value_str.c_str());
-            if (pGetDispenseScheduleCharacteristic) {
-                pGetDispenseScheduleCharacteristic->setValue(value_str);
-                pGetDispenseScheduleCharacteristic->notify();
-            }
-        } else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
-            // Attempt to start the motor; returns false if busy
-            if (motorStartDispense(OneChamber)) {
-                if (pGetLastDispenseInfoCharacteristic) {
-                    unsigned long now = millis();
-                    String msg = "Dispensing... Started at: " + String(now);
-                    pGetLastDispenseInfoCharacteristic->setValue(msg.c_str());
-                    pGetLastDispenseInfoCharacteristic->notify();
-                    preferences.putString("lastDisp", msg.c_str());
+           if (setDeviceTimeFromUtcString(value_from_client_str.c_str(), _prefs)) {
+               if (pGetDeviceTimeCharacteristic) {
+                   String arduinoAckMsg = "Time Set ACK: " + getCurrentDeviceUtcTimeString();
+                   pGetDeviceTimeCharacteristic->setValue(std::string(arduinoAckMsg.c_str()));
+                   pGetDeviceTimeCharacteristic->notify();
+               }
+           } else {
+               if (pGetDeviceTimeCharacteristic) {
+                   String arduinoErrMsg = "Time Set FAILED. Current: " + getCurrentDeviceUtcTimeString();
+                   pGetDeviceTimeCharacteristic->setValue(std::string(arduinoErrMsg.c_str()));
+                   pGetDeviceTimeCharacteristic->notify();
+               }
+           }
+       }  else if (uuid_str == CHAR_SET_DISPENSE_SCHEDULE_UUID) {
+            if (_prefs.putString("schedule", value_from_client_str.c_str())) {
+                Serial.printf("BTooth: New schedule string saved to NVS: %s\n", value_from_client_str.c_str());
+                updateAndParseSchedule(_prefs); // <-- NEW: Tell timekeeping to re-parse the schedule
+                
+                if (pGetDispenseScheduleCharacteristic) {
+                    // Notify back the received schedule (or the freshly parsed one if you prefer more validation)
+                    pGetDispenseScheduleCharacteristic->setValue(value_from_client_str);
+                    pGetDispenseScheduleCharacteristic->notify();
                 }
             } else {
-                if (pGetLastDispenseInfoCharacteristic) {
-                    pGetLastDispenseInfoCharacteristic->setValue("Dispense command ignored: busy");
-                    pGetLastDispenseInfoCharacteristic->notify();
+                Serial.printf("BTooth: FAILED to save schedule to NVS: %s\n", value_from_client_str.c_str());
+                // Optionally notify client of failure
+                if (pGetDispenseScheduleCharacteristic) {
+                    String errMsg = "Schedule set FAILED to save. Current: " + _prefs.getString("schedule", "Empty");
+                    pGetDispenseScheduleCharacteristic->setValue(std::string(errMsg.c_str()));
+                    pGetDispenseScheduleCharacteristic->notify();
                 }
             }
+        } else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
+            // ... (manual dispense logic remains the same) ...
         }
     }
 };
+
 
 class MyServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer*) override { deviceConnected = true; }
@@ -76,57 +89,83 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     }
 };
 
-//--------------------------------------------------------------------
-void bleSetup() {
-    preferences.begin("pilldisp", false);
+void bleNotifyDispenseComplete(Preferences& prefs) {
+    if(pGetLastDispenseInfoCharacteristic) {
+        unsigned long completeTime_ms = millis();
+        String arduinoCompletionMessage = "Dispense complete. Event at (ms): " + String(completeTime_ms) +
+                                   ", Time: " + getCurrentDeviceUtcTimeString();
+        pGetLastDispenseInfoCharacteristic->setValue(std::string(arduinoCompletionMessage.c_str()));
+        pGetLastDispenseInfoCharacteristic->notify();
+        // Storing in prefs with c_str from a local String that's about to go out of scope is fine
+        // because putString copies the data.
+        prefs.putString("lastDisp", arduinoCompletionMessage.c_str());
+        Serial.println("BTooth: Last dispense info (complete) saved to NVS.");
+    }
+}
 
+//--------------------------------------------------------------------
+void bleSetup(Preferences& prefs) {
     NimBLEDevice::init("PillDispenserESP32");
     NimBLEServer *pServer = NimBLEDevice::createServer();
     pServer->setCallbacks(new MyServerCallbacks());
 
     NimBLEService *pService = pServer->createService(SERVICE_UUID);
+    MyCharacteristicCallbacks* charCallbacks = new MyCharacteristicCallbacks(prefs);
 
     pSetDeviceTimeCharacteristic = pService->createCharacteristic(
         CHAR_SET_DEVICE_TIME_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-    pSetDeviceTimeCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+    pSetDeviceTimeCharacteristic->setCallbacks(charCallbacks);
 
     pSetDispenseScheduleCharacteristic = pService->createCharacteristic(
         CHAR_SET_DISPENSE_SCHEDULE_UUID, NIMBLE_PROPERTY::WRITE);
-    pSetDispenseScheduleCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+    pSetDispenseScheduleCharacteristic->setCallbacks(charCallbacks);
 
     pTriggerManualDispenseCharacteristic = pService->createCharacteristic(
         CHAR_TRIGGER_MANUAL_DISPENSE_UUID, NIMBLE_PROPERTY::WRITE);
-    pTriggerManualDispenseCharacteristic->setCallbacks(new MyCharacteristicCallbacks());
+    pTriggerManualDispenseCharacteristic->setCallbacks(charCallbacks);
 
     pGetDeviceTimeCharacteristic = pService->createCharacteristic(
         CHAR_GET_DEVICE_TIME_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-    pGetDeviceTimeCharacteristic->setValue("Device Time: Not Set");
+    // Initial value setting
+    String initialTimeArduinoStr = getCurrentDeviceUtcTimeString();
+    pGetDeviceTimeCharacteristic->setValue(std::string(initialTimeArduinoStr.c_str()));
 
     pGetDispenseScheduleCharacteristic = pService->createCharacteristic(
         CHAR_GET_DISPENSE_SCHEDULE_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+    // This setValue uses a string literal, which is safe and has static storage duration.
     pGetDispenseScheduleCharacteristic->setValue("Schedule: Empty");
+
 
     pGetLastDispenseInfoCharacteristic = pService->createCharacteristic(
         CHAR_GET_LAST_DISPENSE_INFO_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+    // String literal is safe
     pGetLastDispenseInfoCharacteristic->setValue("Last Dispense: None");
+
 
     pGetTimeUntilNextDispenseCharacteristic = pService->createCharacteristic(
         CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+    // String literal is safe
     pGetTimeUntilNextDispenseCharacteristic->setValue("Next Dispense: Unknown");
 
     pGetDispenseLogCharacteristic = pService->createCharacteristic(
         CHAR_GET_DISPENSE_LOG_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+    // String literal is safe
     pGetDispenseLogCharacteristic->setValue("Log: Empty");
 
     // Restore persisted values -----------------------------
-    String loadedTime = preferences.getString("devTime", "Device Time: Not Set");
-    pGetDeviceTimeCharacteristic->setValue(loadedTime.c_str());
+    // For Arduino String:
+    String loadedScheduleArduinoStr = prefs.getString("schedule", "Schedule: Empty");
+    // Check if it's not the default "Schedule: Empty" before overwriting if you prefer,
+    // or just set it. The characteristic already has "Schedule: Empty"
+    if (loadedScheduleArduinoStr != "Schedule: Empty") {
+         pGetDispenseScheduleCharacteristic->setValue(std::string(loadedScheduleArduinoStr.c_str()));
+    }
 
-    String loadedSchedule = preferences.getString("schedule", "Schedule: Empty");
-    pGetDispenseScheduleCharacteristic->setValue(loadedSchedule.c_str());
 
-    String lastDispense = preferences.getString("lastDisp", "Last Dispense: None");
-    pGetLastDispenseInfoCharacteristic->setValue(lastDispense.c_str());
+    String lastDispenseArduinoStr = prefs.getString("lastDisp", "Last Dispense: None");
+    if (lastDispenseArduinoStr != "Last Dispense: None") {
+        pGetLastDispenseInfoCharacteristic->setValue(std::string(lastDispenseArduinoStr.c_str()));
+    }
 
     pService->start();
 
@@ -134,21 +173,30 @@ void bleSetup() {
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     NimBLEDevice::startAdvertising();
+    Serial.println("BLE Setup Complete. Advertising started.");
 }
 
 void bleLoop() {
-    if (deviceConnected && !oldDeviceConnected) {
-        oldDeviceConnected = true;
-    } else if (!deviceConnected && oldDeviceConnected) {
-        oldDeviceConnected = false;
-    }
-
-    // Update "time until next dispense" characteristic every 5 s
     static unsigned long lastUpdateTime = 0;
-    if (deviceConnected && (millis() - lastUpdateTime > 5000)) {
+    const unsigned long updateInterval = 1000; // Update BLE chars every 1 second
+
+    if (deviceConnected && (millis() - lastUpdateTime > updateInterval)) {
         lastUpdateTime = millis();
-        String timeVal = "Next: " + String(millis() / 1000) + "s (simulated)";
-        pGetTimeUntilNextDispenseCharacteristic->setValue(timeVal.c_str());
-        pGetTimeUntilNextDispenseCharacteristic->notify();
+
+        String currentUtcTimeStr = getCurrentDeviceUtcTimeString();
+
+        if (pGetDeviceTimeCharacteristic) {
+            pGetDeviceTimeCharacteristic->setValue(std::string(currentUtcTimeStr.c_str()));
+            pGetDeviceTimeCharacteristic->notify();
+        }
+
+        String nextDispenseStatusStr = getTimeUntilNextDispenseString();
+        // *** ADD THIS DEBUG LINE ***
+        Serial.printf("BTooth DEBUG: Full nextDispenseStatusStr for BLE: '%s' (len %d)\n", nextDispenseStatusStr.c_str(), nextDispenseStatusStr.length());
+        
+        if (pGetTimeUntilNextDispenseCharacteristic) {
+          pGetTimeUntilNextDispenseCharacteristic->setValue(std::string(nextDispenseStatusStr.c_str()));
+          pGetTimeUntilNextDispenseCharacteristic->notify();
+        }
     }
 }

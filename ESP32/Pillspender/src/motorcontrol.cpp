@@ -40,16 +40,22 @@ bool motorStartDispense(int numSteps) {
     return false;
 }
 
-void motorLoop() {
-    if (isStepping && (millis() - lastStepTime >= stepInterval)) {
-        if (stepsRemaining > 0) {
-            myStepper.step(1);
-            stepsRemaining--;
-            lastStepTime = millis();
-        } else {
-            isStepping = false;
-            deenergizeStepper();
-            Serial.println("Dispense complete.");
+MotorStatus motorLoop() {
+    if (isStepping) {
+        if (millis() - lastStepTime >= stepInterval) {
+            if (stepsRemaining > 0) {
+                myStepper.step(1);
+                stepsRemaining--;
+                lastStepTime = millis();
+                return MOTOR_RUNNING;
+            } else {
+                isStepping = false;
+                deenergizeStepper();
+                Serial.println("Dispense complete.");
+                return MOTOR_JUST_COMPLETED; // Signal completion
+            }
         }
+        return MOTOR_RUNNING; // Still stepping or waiting for interval
     }
+    return MOTOR_IDLE; // Not stepping
 }
