@@ -75,7 +75,6 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
                 }
             }
         } else if (uuid_str == CHAR_TRIGGER_MANUAL_DISPENSE_UUID) {
-            // ... (manual dispense logic remains the same) ...
         }
     }
 };

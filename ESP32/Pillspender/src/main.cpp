@@ -2,30 +2,28 @@
 #include <Arduino.h>
 #include "motorcontrol.h"
 #include "BTooth.h"
-#include "timekeeping.h" // <-- NEW
-#include <Preferences.h> // <-- NEW (for global object)
-
+#include "timekeeping.h"
+#include <Preferences.h> 
 // Forward declaration to fix 'not declared in this scope' error
 void bleSetup(Preferences &preferences); 
 void bleNotifyDispenseComplete(Preferences &preferences);
 
-Preferences preferences; // <-- NEW: Global preferences object
-
+Preferences preferences; 
 void setup() {
     Serial.begin(115200);
-    preferences.begin("pilldisp", false); // <-- NEW: Initialize once
+    preferences.begin("pilldisp", false);
 
-    timekeepingSetup(preferences);     // <-- NEW: Initialize timekeeping
+    timekeepingSetup(preferences);    
     motorSetup();
-    bleSetup(preferences);           // <-- MODIFIED: Pass preferences
+    bleSetup(preferences);          
 }
 
 void loop() {
     bleLoop();
-    timekeepingLoop(); // <-- NEW: Allow timekeeping module to run
+    timekeepingLoop(); 
     MotorStatus motorStatus = motorLoop();
     if (motorStatus == MOTOR_JUST_COMPLETED) {
-        bleNotifyDispenseComplete(preferences); // <-- MODIFIED: Pass preferences
+        bleNotifyDispenseComplete(preferences); 
     }
 
     delay(10);

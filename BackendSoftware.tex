@@ -3,29 +3,39 @@
 
 As mentioned before, the microcontroller of choice is an ESP32 S3 DevKitC-1 N16R8 \cite{microcontroller}. This microcontroller has 16MB Octal \ac{SPI} flash memory and 8MB of \ac{PSRAM}. It supports Arduino framework, which makes it easier to program, compared to many libraries published by the developers (such as Espressif's own ESP-IDF) as it abstracts away some low-level programming through helper libraries (such as \texttt{stepper.h} for charging/discharging of motor coils). The code consists of 2 separate parts: The first part is responsible for communication with stepper motor. It means that it covers all the functions required for stepper motor to rotate a necessary amount of steps to move the next chamber into position. The second part is responsible for \ac{BLE} interface and establishing the device as a \ac{BLE} host.
 
-The \textbf{main.cpp} file is rather minimal because the code was semantically split also in \textbf{\ac{BLE}} and \textbf{Motor Control} parts. Here is a short overview of the contents of main.cpp file:
+The \textbf{main.cpp} file is rather minimal because the code was semantically split into \textbf{\ac{BLE}}, \textbf{Motor Control} and \textbf{timekeeping} parts. Here is a short overview of the contents of main.cpp file:
 \begin{lstlisting}[style=cppstyle, caption={Main Arduino Loop Code}, label={lst:mainLoop}]
-	#include <Arduino.h>
-	#include "motorcontrol.h"
-	#include "BTooth.h"
+#include <Arduino.h>
+#include "motorcontrol.h"
+#include "BTooth.h"
+#include "timekeeping.h"
+#include <Preferences.h> 
+// Forward declaration to fix 'not declared in this scope' error
+void bleSetup(Preferences &preferences); 
+void bleNotifyDispenseComplete(Preferences &preferences);
+
+Preferences preferences; 
+void setup() {
+	Serial.begin(115200);
+	preferences.begin("pilldisp", false);
 	
-	void setup() {
-		Serial.begin(115200);
-		
-		motorSetup();     // stepper + pins
-		bleSetup();       // BLE GATT server
+	timekeepingSetup(preferences);    
+	motorSetup();
+	bleSetup(preferences);          
+}
+
+void loop() {
+	bleLoop();
+	timekeepingLoop(); 
+	MotorStatus motorStatus = motorLoop();
+	if (motorStatus == MOTOR_JUST_COMPLETED) {
+		bleNotifyDispenseComplete(preferences); 
 	}
 	
-	void loop() {
-		bleLoop();
-		MotorStatus motorStatus = motorLoop(); // Call motorLoop and get its status
-		if (motorStatus == MOTOR_JUST_COMPLETED) {
-			bleNotifyDispenseComplete(); 
-		}
-		delay(10);
-	}
+	delay(10);
+}
 \end{lstlisting}
-As seen in the code block \ref{lst:mainLoop}, \textbf{main.cpp} file includes 3 libraries, 2 of which are custom (\texttt{motorcontrol.h} and \texttt{BTooth.h}) and one is a built-in \texttt{Arduino.h} library. Specifics of Arduino microcontroller programming is that main body is divided into \texttt{setup()} and \texttt{loop()} functions, unlike standard C/C++ file where only \texttt{int main()} exists. Effectively, this is the same thing as C code having a \texttt{while(TRUE)} loop inside the \texttt{main()} function.
+As seen in the Listing \ref{lst:mainLoop}, \textbf{main.cpp} file includes 5 libraries, 3 of which are custom (\texttt{motorcontrol.h}, \texttt{BTooth.h} and \textbf{timekeeping.h}) and two are a built-in \texttt{Arduino.h} and  \textbf{Preferences.h} libraries. One special thing about of Arduino microcontroller programming is that main body is divided into \texttt{setup()} and \texttt{loop()} functions, unlike standard C/C++ file where only \texttt{int main()} exists. Effectively, this is the same thing as C code having a \texttt{while(TRUE)} loop inside the \texttt{main()} function. This file also initializes \texttt{preferences} class which is used for writing on-to on-board \ac{NVS}
 \subsection{Stepper motor controls}
 \begin{figure}
 	\centering
@@ -34,7 +44,7 @@ As seen in the code block \ref{lst:mainLoop}, \textbf{main.cpp} file includes 3 
 	\label{fig:screenshot18}
 \end{figure}
 
-Controls of a stepper motor are handled by 2 files: \textbf{motorcontrol.cpp}, which contains the implementation itself, and \textbf{motorcontrol.h}, which contains public interface of the motor control module. The motor control implementation is split into 2 (.cpp and .h) files is not only a stylistic choice (splitting declaration action from definition action) but also positively affects code readability, compilation time and prevents accidental redefinition of functions. For example this code block \ref{lst:motorcontrolh} shows the contents of the \textbf{motorcontrol.h} file. The first 2 lines (\texttt{\#ifndef...\#define...}) exist as a preprocessor check (or include guard, a term often used in the industry), they ensure that the declarations within this header file are processed only once per compilation. If \texttt{MOTORCONTROL\_H} has not been defined during the compilation of a particular .cpp file, the preprocessor includes the subsequent lines. These lines contain the declarations for other parts of the program to interact with the motor control module, such as function prototypes (e.g., \texttt{void motorSetup()}), enumeration definitions (\texttt{enum MotorStatus}), and external variable declarations (\texttt{extern const int OneChamber}). The actual implementations (definitions) for these prototyped functions are in the corresponding \texttt{motorcontrol.cpp} file, which is compiled separately and later linked with machine code generated from other files.
+Controls of a stepper motor are handled by 2 files: \textbf{motorcontrol.cpp}, which contains the implementation itself, and \textbf{motorcontrol.h}, which contains public interface of the motor control module. The motor control implementation is split into 2 (.cpp and .h) files is not only a stylistic choice (splitting declaration action from definition action) but also positively affects code readability, compilation time and prevents accidental redefinition of functions. For example this Listing \ref{lst:motorcontrolh} shows the contents of the \textbf{motorcontrol.h} file. The first 2 lines (\texttt{\#ifndef...\#define...}) exist as a preprocessor check (or include guard, a term often used in the industry), they ensure that the declarations within this header file are processed only once per compilation. If \texttt{MOTORCONTROL\_H} has not been defined during the compilation of a particular .cpp file, the preprocessor includes the subsequent lines. These lines contain the declarations for other parts of the program to interact with the motor control module, such as function prototypes (e.g., \texttt{void motorSetup()}), enumeration definitions (\texttt{enum MotorStatus}), and external variable declarations (\texttt{extern const int OneChamber}). The actual implementations (definitions) for these prototyped functions are in the corresponding \texttt{motorcontrol.cpp} file, which is compiled separately and later linked with machine code generated from other files.
 
 \begin{lstlisting}[style=cppstyle, caption={Header for Motor Control Interface}, label={lst:motorcontrolh}]
 	#ifndef MOTORCONTROL_H
@@ -42,21 +52,19 @@ Controls of a stepper motor are handled by 2 files: \textbf{motorcontrol.cpp}, w
 	
 	#include <Arduino.h>
 	
-	extern const int OneChamber;          // 1/8 revolution, exported for BLE layer
+	extern const int OneChamber;         
 	enum MotorStatus { MOTOR_IDLE, MOTOR_RUNNING, MOTOR_JUST_COMPLETED };
 	void motorSetup();                    // call once from setup()
 	bool motorStartDispense(int numSteps); // returns true if motor accepted the job
 	
 	MotorStatus motorLoop();
-	// ...
-	
 	#endif // MOTORCONTROL_H
 \end{lstlisting}
-Having covered the structure of the files responsible for handling motor controls, it is time to look at an actual implementation within the \textbf{motorcontrol.cpp} file, as seen in this code block \ref{lst:motorcontrolcpp}. The file begins with inclusion of libraries. \texttt{motorcontrol.h} is the accompanying header file containing function prototypes, \texttt{Stepper.h} library is a built-in Arduino library for high-level stepper motor control. 
+Having covered the structure of the files responsible for handling motor controls, it is time to look at an actual implementation within the \textbf{motorcontrol.cpp} file, as seen in this Listing \ref{lst:motorcontrolcpp}. The file begins with inclusion of libraries. \texttt{motorcontrol.h} is the accompanying header file containing function prototypes, \texttt{Stepper.h} library is a built-in Arduino library for high-level stepper motor control. 
 
-After libraries come 2 \textit{const} variables needed to calculate rotation (code block \ref{lst:motorcontrolcpp}, lines 4 and 5). According to the 28BYJ-48 documentation \cite{stepper}, it has Speed Variation Ratio 1/64 and Stride Angle 5.625deg /64 (it is usually denoted for half-step mode, so full-step mode would be 1/32), which essentially means that inside this motor, there is an internal gear connected to an external gear that rotates the shaft, connected with a 1-to-64 gear reduction, but the internal gear also steps 1/64th of a rotation each time coil polarisation changes. It means that total amount of steps for the full rotation of the shaft is 64*64=4096 , which gives us the value for the \texttt{const int stepsPerRevolution = 2048;}. To calculate \texttt{const int OneChamber = stepsPerRevolution / 8;}, gear ratio of designed device should be taken into consideration. As mentioned in the previous section, the inner ring of the Mill contains 88 teeth, while gear that is attached to the stepper motor has 32 teeth. Since there are 22 Chambers in total, each chamber corresponds to exactly 4 teeth of rotation (teeth are equal for both motor and Mill gears). 
+After libraries come 2 \textit{const} variables needed to calculate rotation (Listing \ref{lst:motorcontrolcpp}, lines 4 and 5). According to the 28BYJ-48 documentation \cite{stepper}, it has Speed Variation Ratio 1/64 and Stride Angle 5.625deg /64 (it is usually denoted for half-step mode, so full-step mode would be 1/32), which essentially means that inside this motor, there is an internal gear connected to an external gear that rotates the shaft, connected with a 1-to-64 gear reduction, but the internal gear also steps 1/64th of a rotation each time coil polarisation changes. It means that total amount of steps for the full rotation of the shaft is 64*64=4096 , which gives us the value for the \texttt{const int stepsPerRevolution = 2048;}. To calculate \texttt{const int OneChamber = stepsPerRevolution / 8;}, gear ratio of designed device should be taken into consideration. As mentioned in the previous section, the inner ring of the Mill contains 88 teeth, while gear that is attached to the stepper motor has 32 teeth. Since there are 22 Chambers in total, each chamber corresponds to exactly 4 teeth of rotation (teeth are equal for both motor and Mill gears). 
 
-Next is the definition of the pins that are attached to the wires that drive the stepper motor (lines 7 to 10) and then (line 12) \texttt{Stepper} class of the \texttt{Stepper.h} library. It takes as an input amount of steps and energizing leads. After the class, helper variables are declared. They serve utility functions such as state change in the code. We will review their purpose when they appear in functions. 
+Next is the definition of the pins that are attached to the wires that drive the stepper motor (lines 7 to 10) and then (line 12) \texttt{Stepper} class of the \texttt{Stepper.h} library. It takes as an input amount of steps and energizing leads. After the class, helper variables are declared. They serve utility functions such as state change in the code. Their purpose will be reviewed when they appear in functions. 
 
 After establishing the structure, the functions are declared:
 \begin{itemize}
@@ -64,7 +72,7 @@ After establishing the structure, the functions are declared:
 	\item \textbf{motorSetup()} function initializes the motor. Since it only takes speed as an input, there is not much else to initialize, but it also has output lines to check whether operation has been correctly done.
 	\item \textbf{motorStartDispense(int numSteps)}  function serves as the primary interface to initiate a motor rotation. It rotates the Pill Dispenser exactly one chamber. It has a precondition \texttt{if (!isStepping)}: it will not do anything if motor is already in process of rotating. It takes an integer \texttt{numSteps} as input, specifying how many steps the motor should turn. 
 \end{itemize}
-Next, \texttt{MotorStatus motorLoop()}. The \texttt{MotorStatus} is a function of an \textit{enum} type, which means it can only a predetermined set of values. It which serves the purpose of state-selector. It is defined in the \textbf{motorcontrol.h} file (seen here: \ref{lst:motorcontrolh}, on line 7). The logic for state-change is defined in the \texttt{motorLoop()} variable. Graphically, the controlling logic can be seen on image \ref{fig:screenshot18}. The loop works as follows:
+Next, \texttt{MotorStatus motorLoop()}. The \texttt{MotorStatus} is a function of an \textit{enum} type, which means it can only a predetermined set of values. It which serves the purpose of state-selector. It is defined in the \textbf{motorcontrol.h} file (seen here: \ref{lst:motorcontrolh}, on line 7). The logic for state-change is defined in the \texttt{motorLoop()} variable. Graphically, the controlling logic can be seen in Figure \ref{fig:screenshot18}. The loop works as follows:
 
 \begin{itemize}
 	\item \textbf{Top-level availability test}\\
@@ -172,14 +180,16 @@ MotorStatus motorLoop() {
 
 \end{lstlisting}
 \subsection{Bluetooth Controls}
-Similarly to stepper motor controls, Bluetooth controls have also been split into 2 files, \textbf{BTooth.h} and \textbf{BTooth.cpp}. the header file \textbf{BTooth.h} is quite small, as you can see in the code block \ref{lst:BToothh}, it only contains 8 lines, main body of which contains 3 prototype functions, which will be described when the implementation file, \textbf{BTooth.cpp} is covered.
+Similarly to stepper motor controls, Bluetooth controls have also been split into 2 files, \textbf{BTooth.h} and \textbf{BTooth.cpp}. the header file \textbf{BTooth.h} is quite small, as you can see in the Listing \ref{lst:BToothh}, it only contains 8 lines, main body of which contains 3 prototype functions, which will be described when the implementation file, \textbf{BTooth.cpp} is covered.
 \begin{lstlisting}[style=cppstyle, caption={Header for Bluetooth implementation}, label={lst:BToothh}]
 #ifndef BTOOTH_H
 #define BTOOTH_H
 
-void bleSetup();
+#include <Preferences.h>
+
+void bleSetup(Preferences& prefs);
 void bleLoop();
-void bleNotifyDispenseComplete();
+void bleNotifyDispenseComplete(Preferences& prefs);
 
 #endif // BTOOTH_H
 \end{lstlisting}
@@ -201,16 +211,16 @@ Before doing so, the fundamentals of Bluetooth, and particularly \ac{BLE} must b
 	\item \textbf{Device Name} is a human-readable name a device advertises, in this case it is "PillDispenserESP32".
 	\item \textbf{Device Address (MAC Address)} is a unique hardware identifier for a Bluetooth device.
 \end{itemize}
-The main unit of communication and crucial part of the protocols structure is the \ac{GATT} profile. While \ac{GATT} is part of \ac{BLE} protocol, it has many terms associated directly with it, as seen on image \ref{fig:screenshot19}. The associated terms are described as follows:
+The main unit of communication and crucial part of the protocols structure is the \ac{GATT} profile. While \ac{GATT} is part of \ac{BLE} protocol, it has many terms associated directly with it, as seen in Figure \ref{fig:screenshot19}. The associated terms are described as follows:
 \begin{itemize}
 	\item \textbf{Generic Attribute Profile} or \ac{GATT}, Defines high level data types known as services, characteristics and descriptors in terms of underlying attributes in the attribute table.
-	\item \textbf{Profile} Profile specifications define the roles that related devices (like the smartwatch and key fob) assume and in particular, define the behaviour of the client device and the data on the connected server that it should work with. In case of this thesis, a custom profile has been implemented, through the services and characteristics that have been defined.
-	\item \textbf{Service} A service specification defines a single service along with the characteristics and descriptors that it contains. The behaviours to be exhibited by the device hosting the service in response to various conditions and state data values are defined in the service specification.
+	\item \textbf{Profile} Profile specifications define the roles that related devices (like the smartwatch and key fob) assume and in particular, define the behavior of the client device and the data on the connected server that it should work with. In case of this thesis, a custom profile has been implemented, through the services and characteristics that have been defined.
+	\item \textbf{Service} A service specification defines a single service along with the characteristics and descriptors that it contains. The behaviors to be exhibited by the device hosting the service in response to various conditions and state data values are defined in the service specification.
 	\item \textbf{Characteristic} Characteristics are individual items of state data and have a type, an associated value and a set of properties which indicate how the data may be used in terms of sets of related GATT procedures.
 	\item \textbf{Value} The attribute value field is a byte array contain the attribute’s value. Interpretation of the byte array both in terms of data types and semantics is the concern of higher layers of the stack.
 	\item \textbf{Properties} Define what operations a client can perform on a characteristic's value (Read, Write, Write Without Response, Notify, Indicate). 
 	\item \textbf{UUID} all services, characteristics and descriptors have a \ac{UUID} which identifies the type of the service, characteristic or descriptor to which it relates rather than a particular instance on a particular device.
-	\item \textbf{Descriptor} Descriptors belong to some characteristics and can contain metadata like a textual description for the characteristic or might provide some means of controlling the behaviour of a characteristic. Characteristics have zero or more descriptors attached to them.
+	\item \textbf{Descriptor} Descriptors belong to some characteristics and can contain metadata like a textual description for the characteristic or might provide some means of controlling the behavior of a characteristic. Characteristics have zero or more descriptors attached to them.
 	\item \textbf{CCCD} Any characteristic supporting notifications or indications must have a client characteristic configuration descriptor because its value (which clients may write to) controls whether or not notifications or indications are currently enabled or not.
 \end{itemize}
 Additionally, all \ac{BLE} Operations can be categorized in 3 groups:
@@ -220,7 +230,7 @@ Additionally, all \ac{BLE} Operations can be categorized in 3 groups:
 	\item \textbf{Notification Subscription} when the central enables notifications on a characteristic (by writing to its \ac{CCCD}) to receive updates when its value changes.
 \end{itemize}
 \subsubsection{Implementation of Bluetooth Protocol}
-Next, the actual implementation of \ac{BLE} interface shall be covered. The code block \ref{lst:BToothcpp1} provides the definition and initialization part.  Firstly, preprocessor directives to include other files: 
+Next, the actual implementation of \ac{BLE} interface shall be covered. The Listing \ref{lst:BToothcpp1} provides the definition and initialization part.  Firstly, preprocessor directives to include other files: 
 \begin{itemize}
 	\item \texttt{BTooth.h} is the header file for this file;
 	\item \texttt{motorcontrol.h} is used for manual dispense;
@@ -250,7 +260,7 @@ After that, Service and Characteristic \ac{UUID}s are declared. Their exact valu
 		\item \texttt{Get\_Dispense\_Log} — full dispense history.
 	\end{itemize}
 \end{description}
-As seen in the code block \ref{lst:BToothcpp1}, there is a naming convention in place. For \ac{UUID}s it is \texttt{CHAR"\_CHARACTERISTIC\_PURPOSE"\_UUID} except for \texttt{SERVICE\_UUID} which is a service and not a characteristic, therefore it doesn't have \texttt{CHAR} prefix. The pointers to these characteristics are initialized as null-pointers i.e. without an address, as not doing so will make them point to random areas of memory, causing unpredictable behavior. \texttt{Static} means that they can be accessed anywhere within this file, but cannot be accessed from without. The naming convention for pointers is \texttt{p"CharacteristicPurpose"Characteristic}. Next, \texttt{static Preferences preferences;} class is declared to manipulate static memory and finally a \texttt{static bool deviceConnected = false} boolean(can have values either 'true' or 'false') variable is initialized to track the connection status.
+As seen in the Listing \ref{lst:BToothcpp1}, there is a naming convention in place. For \ac{UUID}s it is \texttt{CHAR"\_CHARACTERISTIC\_PURPOSE"\_UUID} except for \texttt{SERVICE\_UUID} which is a service and not a characteristic, therefore it doesn't have \texttt{CHAR} prefix. The pointers to these characteristics are initialized as null-pointers i.e. without an address, as not doing so will make them point to random areas of memory, causing unpredictable behavior. \texttt{Static} means that they can be accessed anywhere within this file, but cannot be accessed from without. The naming convention for pointers is \texttt{p"CharacteristicPurpose"Characteristic}. finally a \texttt{static bool deviceConnected = false} boolean(can have values either 'true' or 'false') variable is initialized to track the connection status.
 \begin{lstlisting}[style=cppstyle, caption={Preprocessor directives and definitions in the \texttt{BTooth.cpp} file}, label={lst:BToothcpp1}]
 #include "BTooth.h"
 #include "motorcontrol.h"
@@ -258,28 +268,17 @@ As seen in the code block \ref{lst:BToothcpp1}, there is a naming convention in 
 #include <Arduino.h>
 #include <NimBLEDevice.h>
 #include <Preferences.h>
+#include "timekeeping.h"
+#include <string> 
 
-// BLE Service + Characteristic UUIDs 
+// BLE Service + Characteristic UUIDs (unchanged)
 #define SERVICE_UUID                           "03339647-3f4e-43df-abff-fac54287cf1a"
 #define CHAR_SET_DEVICE_TIME_UUID              "65232f1d-618a-4268-9050-0548142a4536"
 #define CHAR_SET_DISPENSE_SCHEDULE_UUID        "999c584e-06c0-49a1-995a-66b7c802ac1b"
-#define CHAR_TRIGGER_MANUAL_DISPENSE_UUID      "36bb95f2-e57e-4db9-b9aa-fb6541ee784e"
-#define CHAR_GET_DEVICE_TIME_UUID              "272ee276-e37e-4d78-8c5e-bb7225d35074"
-#define CHAR_GET_DISPENSE_SCHEDULE_UUID        "b53c2ed4-ae26-476d-8414-011a025dddfc"
-#define CHAR_GET_LAST_DISPENSE_INFO_UUID       "40d3b5d8-5480-4b7b-a115-5fe86bf17d7d"
-#define CHAR_GET_TIME_UNTIL_NEXT_DISPENSE_UUID "4b14acc4-768a-43e1-9d6c-0d97307e2666"
-#define CHAR_GET_DISPENSE_LOG_UUID             "6f182da7-c5a8-40ab-a637-f97ed6b5777b"
-
-static NimBLECharacteristic *pSetDeviceTimeCharacteristic         = nullptr;
+. . . // the rest of UUIDs
 static NimBLECharacteristic *pSetDispenseScheduleCharacteristic    = nullptr;
 static NimBLECharacteristic *pTriggerManualDispenseCharacteristic = nullptr;
-static NimBLECharacteristic *pGetDeviceTimeCharacteristic          = nullptr;
-static NimBLECharacteristic *pGetDispenseScheduleCharacteristic    = nullptr;
-static NimBLECharacteristic *pGetLastDispenseInfoCharacteristic    = nullptr;
-static NimBLECharacteristic *pGetTimeUntilNextDispenseCharacteristic = nullptr;
-static NimBLECharacteristic *pGetDispenseLogCharacteristic         = nullptr;
-
-static Preferences preferences;
+. . ./ the rest of pointers
 
 static bool deviceConnected    = false;
 \end{lstlisting}
@@ -290,7 +289,7 @@ static bool deviceConnected    = false;
 	\label{fig:screenshot20}
 \end{figure}
 
-The next part, the \texttt{ \textbf{MyCharacteristicCallbacks} } class is a crucial part of the functionality of the code. It determines what actions should be taken when there is a write command coming from the \ac{BLE} client. This code block \ref{lst:callbacks} contains the implementation of \texttt{MyCharacteristicCallbacks} class. This class works like this: it is inherited from the base \texttt{NimBLECharacteristicCallbacks} class, which contains functions for various characteristic events (such as read, write, notify subscription changes). Inside this class, there is a single \texttt{'onWrite(NimBLECharacteristic *pCharacteristic) override'} method, which overrides (essentially redefines what this method does) the built-in method from base class. It takes as an input \texttt{pCharacteristic}, a pointer to the \texttt{NimBLECharacteristic} type object that received write request, which determines which characteristic and what value was written. This method takes this input object, which contains \ac{UUID} and Value, and converts them to string (lines 3 and 4). Then it goes through a list of writable characteristics and compares their \ac{UUID}s to the value it got from the input to what exactly needs to be done. A good analogy to this would be a mailman distributing letters. The letters have content which only the correct receiver correctly interprets and acts upon. In this analogy, a mailman is the method \texttt{onWrite}, receivers are \ac{UUID}s and letters themselves are values. When the correct recipient is found the tasks are done according to who received it:
+The next part, the \texttt{ \textbf{MyCharacteristicCallbacks} } class is a crucial part of the functionality of the code. It determines what actions should be taken when there is a write command coming from the \ac{BLE} client. This Listing \ref{lst:callbacks} contains the implementation of \texttt{MyCharacteristicCallbacks} class. This class works like this: it is inherited from the base \texttt{NimBLECharacteristicCallbacks} class, which contains functions for various characteristic events (such as read, write, notify subscription changes). Inside this class, there is a single \texttt{'onWrite(NimBLECharacteristic *pCharacteristic) override'} method, which overrides (essentially redefines what this method does) the built-in method from base class. It takes as an input \texttt{pCharacteristic}, a pointer to the \texttt{NimBLECharacteristic} type object that received write request, which determines which characteristic and what value was written. This method takes this input object, which contains \ac{UUID} and Value, and converts them to string (lines 3 and 4). Then it goes through a list of writable characteristics and compares their \ac{UUID}s to the value it got from the input to what exactly needs to be done. A good analogy to this would be a mailman distributing letters. The letters have content which only the correct receiver correctly interprets and acts upon. In this analogy, a mailman is the method \texttt{onWrite}, receivers are \ac{UUID}s and letters themselves are values. When the correct recipient is found the tasks are done according to who received it:
 \begin{itemize}
 	\item \textbf{CHAR\_SET\_DEVICE\_TIME\_UUID} Sets device time to that of the value of received data and notifies subscribers that value has changed.
 	\item \textbf{CHAR\_SET\_DISPENSE\_SCHEDULE\_UUID} Sets the scedule to that of the value and save is to \ac{NVS}. Notifies subscribers that value has changed.
@@ -335,7 +334,7 @@ class MyCharacteristicCallbacks : public NimBLECharacteristicCallbacks {
 };
 \end{lstlisting}
 
-The \texttt{\textbf{MyServerCallbacks}} class is very simple in implementation and handles connection and disconnection of the device. As seen in code block \ref{lst:discallbacks}, this class inherits from \texttt{NimBLEServerCallbacks} and overrides \texttt{onConnect} and \texttt{onDisconnect} methods. When device connects, it sets \texttt{deviceConnected} flag to 'true', meaning that it has connected. When device disconnects, it sets this flag to 'false' and starts advertising.
+The \texttt{\textbf{MyServerCallbacks}} class is very simple in implementation and handles connection and disconnection of the device. As seen in Listing \ref{lst:discallbacks}, this class inherits from \texttt{NimBLEServerCallbacks} and overrides \texttt{onConnect} and \texttt{onDisconnect} methods. When device connects, it sets \texttt{deviceConnected} flag to 'true', meaning that it has connected. When device disconnects, it sets this flag to 'false' and starts advertising.
 \begin{lstlisting}[style=cppstyle, caption={MyServerCallbacks class responsible for device connect/disconnect}, label={lst:discallbacks}]
 class MyServerCallbacks : public NimBLEServerCallbacks {
 	void onConnect(NimBLEServer*) override { deviceConnected = true; }
@@ -345,7 +344,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 	}
 };
 \end{lstlisting}
-The function \texttt{\textbf{bleNotifyDispenseComplete()}} is designed to perform two main tasks when a dispensing operation has just finished: to inform the connected client that dispense is complete. Then, to store this completion information on the ESP32 \ac{NVS}. As seen in the code block \ref{lst:dispcomplete},
+The function \texttt{\textbf{bleNotifyDispenseComplete()}} is designed to perform two main tasks when a dispensing operation has just finished: to inform the connected client that dispense is complete. Then, to store this completion information on the ESP32 \ac{NVS}. As seen in the Listing \ref{lst:dispcomplete},
 
 \begin{lstlisting}[style=cppstyle, caption={bleNotifyDispenseComplete function responsible for information logging}, label={lst:dispcomplete}]
 void bleNotifyDispenseComplete() {
@@ -360,7 +359,7 @@ void bleNotifyDispenseComplete() {
 }
 \end{lstlisting}
 
-Next, comes the \texttt{\textbf{bleSetup()}} function. This is a critical function that is responsible for initializing and configuring everything related to \ac{BLE} communication for the device. As seen in the code block \ref{lst:bleSetup}, first, it initializes the \texttt{Preferences} library (line 2) which is responsible for writing to the \ac{NVS}, then it initializes the NimBLE stack (line 4), setting the name of the device for advertising. Next, it creates a \ac{GATT} server instance (line 5) and assigns a callback handler to the server, which handles connection and disconnection of device. Then, it creates \ac{BLE} service within this server(line 8) with the service \ac{UUID} already predefined. After that, it starts creating characteristics. Characteristic creation follows a pattern: each characteristic is created in 3 steps:
+Next, comes the \texttt{\textbf{bleSetup()}} function. This is a critical function that is responsible for initializing and configuring everything related to \ac{BLE} communication for the device. As seen in the Listing \ref{lst:bleSetup}, first, it initializes the \texttt{Preferences} library (line 2) which is responsible for writing to the \ac{NVS}, then it initializes the NimBLE stack (line 4), setting the name of the device for advertising. Next, it creates a \ac{GATT} server instance (line 5) and assigns a callback handler to the server, which handles connection and disconnection of device. Then, it creates \ac{BLE} service within this server(line 8) with the service \ac{UUID} already predefined. After that, it starts creating characteristics. Characteristic creation follows a pattern: each characteristic is created in 3 steps:
 \begin{itemize}
 	\item \textbf{\texttt{pSetDeviceTimeCharacteristic = pService->createCharacteristic}} associates a characteristic with previously created service, establishing a hierarchy(characteristic is subordinate to service). As an input parameters, \texttt{createCharacteristic} function takes \ac{UUID} and \ac{BLE} properties (such as read, write, notify etc.)
 	\item \textbf{\texttt{pSetDeviceTimeCharacteristic->setCallbacks(new MyCharacteristicCallbacks());}} is for characteristics with 'WRITE' property assigned to them. It assigns the \texttt{MyCharacteristicCallbacks} handler. The \texttt{onWrite} method in this class will be called when a client writes a value to this characteristic.
@@ -407,8 +406,8 @@ After defining all characteristics within the service, \texttt{bleSetup} functio
 	}
 \end{lstlisting}
 
-The final part of the Bluetooth implementation file is the \textbf{\texttt{bleLoop()}} function
-\begin{lstlisting}[style=cppstyle, caption={bleSetup() function responsible for initializing the BLE stack}, label={lst:bleSetup}]
+The final part of the Bluetooth implementation file is the \textbf{\texttt{bleLoop()}} function. Its primary purpose is  to periodically update a specific characteristic with a time until next dispense value.  As seenFirst, The code checks if an Android App is connected. If connected, it checks if 5 seconds have passed since it last sent an update for the "time until next dispense". If both are true, it remembers the current time  creates a message like "Next: [current uptime in seconds]s". Then, it puts this message into the "time until next dispense" data slot and finally, sends a notification that the value has been updated.
+\begin{lstlisting}[style=cppstyle, caption={bleLoop() function responsible for notification and time tracking}, label={lst:bleloop}]
 void bleLoop() {
 	static unsigned long lastUpdateTime = 0;
 	if (deviceConnected && (millis() - lastUpdateTime > 5000)) {
@@ -419,3 +418,5 @@ void bleLoop() {
 	}
 }
 \end{lstlisting}
+\subsection{Clock and scheduling controls}
+At the current stage, the code is not implemented, implementation files (\texttt{timekeeping.h} and \texttt{timekeeping.cpp}) already exist. Existence of this code is a crucial requirement and is something to be done next. Steps to implement this functionality will be covered in the \hyperref[sec:discussion]{Results Analysis and Discussion} Section.

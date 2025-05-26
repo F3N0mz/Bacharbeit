@@ -9,6 +9,5 @@ void motorSetup();                    // call once from setup()
 bool motorStartDispense(int numSteps); // returns true if motor accepted the job
 
 MotorStatus motorLoop();
-// ...
 
 #endif // MOTORCONTROL_H

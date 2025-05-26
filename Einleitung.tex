@@ -1,9 +1,9 @@
 \section{Introduction}
 \subsection{Problem Definition and Motivation}
-The main goal of this project is to explore the possibilities of developing such a device that can be mass produced in a decentralized way using conventional tools (3D printing) and at the same time be widely available due to the low manufacturing costs. The question is whether such a device can exist at all. While there are already ready-made solutions on the market, they are not cheap and lack certain features that are present in the prototype in question, be it the lack of remote controls, the lack of flexible scheduling or the lack of a pill disposal system.
+The main goal of this thesis is to explore the possibilities of developing a device that could be mass produced in a decentralized way using conventional tools (e.g. 3D printing) and at the same time be widely available due to the low manufacturing costs. The question is whether such a device could exist at all. While there are already ready-made solutions on the market, they are not cheap and lack certain features that are present in the prototype, be it the lack of remote controls, the lack of flexible scheduling or the lack of a pill disposal system.
 
 \subsection{Goals and Approach}
-   The aim of this project is to develop a device that makes it easier for people with motor or mental disabilities to access their medication. This is to be achieved through automation, ease of use and ergonomics. A working prototype of this device will be developed as part of this project. Here are the initial requirements for this project:
+   The aim of this thesis is to develop a device that makes it easier for people with motor or mental disabilities to access their medication. This is to be achieved through automation, ease of use and ergonomics. A working prototype of this device is to be developed as part of this project. Here are the initial requirements for this project:
    \begin{enumerate}
    	
    	\item The device should contain 21 chambers, 3 for each day of the week. This would be the default setting, but the schedule could also be configured to dispense pills either twice or once a day. In this case, the 21-chamber system does not correspond exactly to the 1-week dispensing time. The dispensing information would be available to the caregiver
@@ -13,54 +13,28 @@ The main goal of this project is to explore the possibilities of developing such
  As this project involves the development of a prototype, activities such as marketing, certification and industrial mass production are not part of the project.
 User testing is also not part of this project, as it requires the production of several devices, the collection of test subjects (i.e. establishing contacts with hospitals, nursing homes, etc.) and the statistical analysis of this data.
 
-All of these are obviously necessary next steps after the development of the prototype, but for this project they are out of the ordinary.
+All of these are necessary next steps following the development of the prototype, but they are out of bounds of this project .
 \newpage
-\subsection{Structure and Organization of the Work}
-This project is divided into several major steps:
+\subsection{Structure and Organization of the Thesis}
+This thesis is divided into several major steps:
 \begin{enumerate}
 	\item{\textbf{Design and Development of the Body}}
 	
-	This is the first task: developing the basic structure. At the end of this step, a complete device should be brought into shape. We will look at the different options for developing the structure, discuss their pros and cons and choose the most suitable one for the next step.
+	This is the first task: developing the basic structure. At the end of this step, a complete device should be brought into shape. Different options for development of the structure will be covered, discussing in detail pros and cons of each. After that, the most suitable one will be chosen to be taken to the next step.
 	\item{\textbf{Construction and 3D-Printing of the Design}}
 	
-	This is the step where our design takes on a physical form. This is the prototyping step where we iteratively develop the device to make sure the design works. This is also the step where the material and mechanical properties of our device are our biggest concern. At the end of this step, the device is functional but not yet configurable. This means that it will be able to rotate one chamber at a time.
+	This is the step where the design takes on a physical form. This is the prototyping step where the device will be iteratively developed, to make sure the that the design works. This is also the step where the material and mechanical properties of the device are the biggest concern. At the end of this step, the device is functional but not yet configurable. This means that it will be able to rotate one chamber at a time.
 	\item{\textbf{Development of the Android APP}}
 	
-	This step is similar to steps 1 and 2, but for an Android app. We design and develop the template for the app, which can then be filled with functions. In this step, we will also determine which functions the microcontroller on our device must output to the app.
-	At the end of this step, we would have a working device and an app, but they are not yet connected, which brings us to the next step.
+	This step is similar to Steps 1 and 2, but focuses on the development of an Android App. A structural prototype of the App will be created, followed by its implementation in code. Additionally, this step will determine which data will be exchanged between the device and the application. A common data format and a communication protocol will also be established (but not yet implemented) during this phase.
+	Positive result of this step would have a working Device and an App, which are not yet connected. Consequently, this will be done in the next step.
 	\item{\textbf{\textbf{Development of the interface between the device and the app}}}
 	This is the final step where everything comes together. The device will communicate with the Android app. It will be able to send (usage statistics, current time, time until next delivery, etc.) and receive (configuration settings, forced delivery command, etc.) information.
 \end{enumerate}
 The table contains more detailed and precise steps to be taken during this project. Please note that it has been expanded and therefore includes more steps. This means that several steps from the table below are combined into one step from the list above. More specifically, steps 1.0 and 2.0 belong to the \hyperref[sec:Bodydesign]{Design and development of the Body} section, and steps 3.0 and 4.0 belong to the \hyperref[sec:3DPrint]{Construction and 3D-Print of Design} section.
 \newpage
-\begin{table}[h!]
-	\centering
-	\small
-	\begin{tabular}{|p{3cm}|p{4cm}|p{4cm}|p{4cm}|}
-	\hline
-	\textbf{Work Package} & \textbf{Input} & \textbf{Activity} & \textbf{Goal} \\
-	\hline
-	1.0 Initialization & Definition of the precise project requirements, identification of the target audience, execution of the bureaucratic process, definition of the project scope. & Communication with stakeholders & Clearly formulated objective, structured development plan. \\
-	\hline
-	2.0 Physical Requirements & Requirements for the device's physical properties: materials, mechanisms, size, robustness requirements, ergonomics. & Analysis of the target audience and communication with stakeholders. & Definition of the boundaries for the proposed designs. \\
-	\hline
-	3.0 3D Printing and Construction of a Functional Prototype & Requirements for the materials used, 3D models of the prototype. & Adapting the models for 3D printing, printing the prototypes. & Physically existing device with all functional features. \\
-	\hline
-	4.0 Implementation of the Delivery System & Constraints from the previous step, ideas for implementation, feasibility of different approaches. & Defining and finalizing a 3D model of the delivery system, 3D design, optional 3D printing of a prototype. & Functional delivery mechanism. \\
-	\hline
-	5.0 Implementation of the Control System & Requirements for ergonomics and functionality. & Selecting the microcontroller, connecting the microcontroller to the delivery system, creating skeleton functions for the required device features. & Delivery system and control system are interconnected and can be programmed, making the delivery system controllable. \\
-	\hline
-	6.0 Programming the Remote App & Requirements for the remote app's functionality. & Programming the app (in a high-level programming language). & Application capable of controlling the device over a wireless network. \\
-	\hline
-	7.0 Programming the Control System & Skeleton functions implemented in the previous steps. & Programming the microcontroller. & The device functions correctly. \\
-	\hline
-\end{tabular}
-	\caption{Project planning table}
-	\label{tab:projektplanung}
-\end{table}
-\newpage
 \subsection{Tools and Technologies}
-For each step there is a different toolset that will be covered here and then mentioned in the chapter of the particular step if necessity arises. Here are the tools that have been used:
+For each step there is a different toolset that will be covered here and then mentioned in the section of the particular step if necessity arises. Here are the tools that have been used:
 
 \begin{enumerate}
 	\item\textbf{Organisation and Project Management}

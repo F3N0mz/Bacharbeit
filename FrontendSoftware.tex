@@ -1,5 +1,5 @@
 \section{Development of a Remote-APP}\label{sec:FrontendDev}
-\textbf{AI Disclaimer}: AI was extensively used to generate  code for the App. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, the chapter will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints. Motivation and methodology for the use of AI will be discussed in the \hyperref[sec:discussion]{Results Analysis and Discussion} section.
+\textbf{AI Disclaimer}: AI was extensively used to generate  code for the App. The file structure, descriptions of main functions and architecture of the app as a whole were not designed by AI, because this information has laid down the groundwork for efficient use of AI to write this said code. Considering this, this Section will not focus as much on code snippets with in-depth explanation of how the code functions, but rather on a structural overview and architecture of the project. File and app structure, most important functions and state selection will be covered here. The code provided by AI was reviewed and tested for its functionality, however it was not tested for the security (A common concern and weak spot of AI-Generated code), because of lack of such requirement and time constraints. Motivation and methodology for the use of AI will be discussed in the \hyperref[sec:discussion]{Results Analysis and Discussion} section.
 
 \textbf{Note}: For programming part, all the source code is available under authors Github Repository here \cite{Github_src}. Code for this section to be found in the \textbf{Android/Dispenser} folder of the repository.
 
@@ -49,7 +49,7 @@ The requirements for bluetooth connection on the side of Android App are as foll
 	\end{itemize}
 	\item Manually disconnect from device
 \end{enumerate}
-All these initial requirements were implemented in code. \ac{GATT} attributes form an interfacing protocol contract between the mobile application and the microcontroller. This shared definition ensures both systems can correctly interpret the \ac{BLE} services and characteristics. Consequently, these attributes are mirrored in the microcontroller's firmware, as detailed in Section  \hyperref[sec:Backenddev]{Microcontroller Programming}. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Code block \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
+All these initial requirements were implemented in code. \ac{GATT} attributes form an interfacing protocol contract between the mobile application and the microcontroller. This shared definition ensures both systems can correctly interpret the \ac{BLE} services and characteristics. Consequently, these attributes are mirrored in the microcontroller's firmware, as detailed in Section  \hyperref[sec:Backenddev]{Microcontroller Programming}. As mentioned above, the Bluetooth connection interface consists of 2 files, \textbf{BluetoothLeManager.kt} and \textbf{GattAttributes.kt}. The first one contains all the functions and classes for the Backend-Frontend interface, while the second one contains \ac{GATT} attributes and their corresponding \ac{UUID}s. Listing \ref{lst:GATTs} is the full \textbf{GattAttributes.kt} file. This file contains all the Attributes that were present in the requirements, as well as some service attributes.
 The standard way of defining it is \texttt{val NAME\_UUID: UUID = UUID.fromString("UUID")}, where \textbf{val} defines a read-only nature of the value (similar, but not quite the same as \texttt{const} keyword in C++), \textbf{UUID} = UUID... is the Java UUID class.
 
 
@@ -91,7 +91,7 @@ Moving forward, some properties of the Kotlin language need to be established:
 	\item \textbf{Scope Functions (\texttt{let, run, with, apply, also})} allow execution of block of code within the context of a given object. Allow referring to an object in different ways and run operations with it as a reference \cite{kotlin_scope_functions}.
 \end{enumerate}
 
-\textbf{BluetoothLeManager.kt} Contains all the logic of the Android app related to interacting with the device. The code block \ref{lst:BLEman} is the top-level structure of the file. At the highest level there is package definition, library imports, service constant TAG used for logging and main. This file itself is too big (740 lines of code) to do an overview line-by-line and its exact functionality is not the scope of this thesis. In this case, a top level overview of the contents of the file will provide the context for understanding the project as a whole, without digging too deep in technical implementation, specifics of the language and the Platform and their interaction with \ac{BLE} protocol.
+\textbf{BluetoothLeManager.kt} Contains all the logic of the Android app related to interacting with the device. Listing \ref{lst:BLEman} is the top-level structure of the file. At the highest level there is package definition, library imports, service constant TAG used for logging and main. This file itself is too big (740 lines of code) to do an overview line-by-line and its exact functionality is not the scope of this thesis. In this case, a top level overview of the contents of the file will provide the context for understanding the project as a whole, without digging too deep in technical implementation, specifics of the language and the Platform and their interaction with \ac{BLE} protocol.
 
  \texttt{BluetoothLeManager} is a class that contains all functions and values for the interface. It relies heavily on built-in Android Package called \texttt{android.bluetooth} \cite{android_bluetooth}. 
 
@@ -225,7 +225,7 @@ The final function of the class is \textbf{cleanup} function. It releases all re
 \begin{figure}
 	\centering
 	\includegraphics[width=0.7\linewidth]{Figures/Screenshot_16}
-	\caption[Model-View-ViewModel Structure]{Model-View-ViewModel Structure. This image explains what model consists of and how different parts of model interact with each other. Credit \cite{García2023}}
+	\caption[Model-View-ViewModel Structure]{Model-View-ViewModel Structure. This Figure explains what model consists of and how different parts of model interact with each other. Credit \cite{García2023}}
 	\label{fig:screenshot16}
 \end{figure}
 
@@ -234,7 +234,7 @@ Having finished with describing how the App handles interface between microcontr
 Once again, before moving forward, there is a certain terminology that needs to be covered. This thesis uses terminology used by official design guide\cite{android_ui_layer} from \textbf{Android Developers} team, which is an industry standard.
 \begin{itemize}
 	\item \textbf{Jetpack Compose} while not a technical term as the others are on the list, Jetpack Compose is the modern toolkit for building native Android \ac{UI}. It defines the paradigm under which all the other terms operate. It operates under the \ac{MVVM} design pattern.
-	\item \textbf{\ac{MVVM}} is an architectural design pattern that separates an application into three (View, Model, ViewModel) components to enhance modularity, testability, and maintainability. Advantages of this pattern is that it separates logic from presentation, allowing easier testing, debugging and troubleshooting\cite{García2023}.
+	\item \textbf{\ac{MVVM}} is an architectural design pattern that separates an application into three (Model, View, ViewModel) components to enhance modularity, testability, and maintainability. Advantages of this pattern is that it separates logic from presentation, allowing easier testing, debugging and troubleshooting\cite{García2023}.
 	\item \textbf{Model} is responsible for manipulation, access and storage of data.
 	\item \textbf{View} is the part of the architecture that a user sees on the screen. 
 	\item \textbf{ViewModel} class is a business logic or screen level state holder. ViewModel is the core of the \ac{MVVM} architecture and sits between the View and the Model. Its principal advantage is that it caches state and persists it through configuration changes. The alternative to a ViewModel is a plain class that holds the data displayed in the \ac{UI}. This can become a problem when navigating between activities or Navigation destinations. Doing so destroys that data if it isn't stored using the saving instance state mechanism. 
@@ -254,7 +254,7 @@ Once again, before moving forward, there is a certain terminology that needs to 
 \end{figure}
 
 \subsubsection{MainActivity.kt}
-The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file as can be seen on image \ref{fig:screenshot17}. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in code block here \ref{lst:MainActivity}.
+The Main entry file to the whole app is called \textbf{MainActivity.kt}. The fundamental part of the \ac{UI} is connected through this file as can be seen on Figure \ref{fig:screenshot17}. It is worth reviewing it here before delving deeper into the each view. The top level structure of the code can be seen in Listing \ref{lst:MainActivity}.
 
 Main application structure is defined in the \textbf{AppScaffoldWithDrawer} composable function. It contains top app bar, a navigation drawer, and the main content area where different views are displayed. This function is called within the \texttt{MainActivity} class's \texttt{onCreate} method to set up the UI.
 \texttt{AppScaffoldWithDrawer} has numerous tasks:
@@ -464,7 +464,7 @@ After this block, functions related to sending data from the App to the device a
 	}
 \end{lstlisting}
 
-\textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default ViewModel provider mechanism cannot supply.
+\textbf{DevConnViewModelFactory.kt} file contains contains a single \textit{DevConnViewModelFactory} class. It is a custom factory responsible for creating instances of \texttt{DevConnViewModel} This is necessary because \texttt{DevConnViewModel} requires arguments in its constructor (\texttt{application} and \texttt{bluetoothLeManager}), which the default \texttt{ViewModel} provider mechanism cannot supply.
 \newpage
 \subsubsection{Device Connection}
 The structure behind \textbf{Device Connection} view consist of multiple files that contribute to this view:
@@ -476,8 +476,8 @@ The structure behind \textbf{Device Connection} view consist of multiple files t
 	\item \textbf{DevConnViewModelFactory.kt} is a standard ViewModel factory responsible for creating instances of \texttt{DevConnViewModel}
 	\item \textbf{GattAttributes.kt} Defines the unique UUIDs for \ac{BLE} service and characteristics on the ESP32. Already covered in the \hyperref[subsec:Bluetooth]{Bluetooth Connection} Section.
 \end{enumerate}
-Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that we will cover next, to understand how the view is created.
-\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. Its top level structure can be seen in code block \ref{lst:DevConnVM} It contains:
+Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} and \textbf{GattAttributes.kt}) have already been previously covered and 3 files that will be covered next, to understand how the view is created.
+\textbf{DevConnScreen.kt} file is responsible for layout and \ac{UI} elements. Its top level structure can be seen in Listing \ref{lst:DevConnVM} It contains:
 \begin{itemize}
 	\item \textbf{UiBluetoothDevice} data class serves as a simplified representation of a Bluetooth device, made to be displayed in the \ac{UI}. It's more convenient to use this in Composable functions than the raw Android \texttt{BluetoothDevice} object directly. Instances of this class are used to populate the list of found devices displayed on the screen(\ac{MAC} address, Device name and whether it is a Pill Dispenser).
 	\item \textbf{ConnectionStatus} class defines a set of distinct states representing the current status of the Bluetooth scanning and connection process. It is a \textbf{sealed} class, which means that all direct subclasses of a sealed class must be declared in the same file as the sealed class itself. Here it is used for a state-switch (using an already known command \texttt{when}). It has 4 state objects: \texttt{Disconnected, Scanning, Connecting, Connected}, each representing current relationship of an App to the device.
@@ -506,7 +506,7 @@ Many of these files (\textbf{BluetoothLeManager.kt}, \textbf{MainActivity.kt} an
 	\label{fig:devconfview}
 \end{figure}
 
-The Device Configuration screen has the following functionality, as also seen on image \ref{fig:devconfview}:
+The Device Configuration screen has the following functionality, as also seen on Figure \ref{fig:devconfview}:
 \begin{itemize}
 		\item \textbf{View Current Device Time}: Displays the time currently set on the ESP32.
 		\item \textbf{Set Device Time}: Manually enter a time string or set the ESP32's time to the phone's current time.
